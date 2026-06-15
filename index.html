@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BidElevate">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3e554f">
+<link rel="manifest" id="be-manifest">
+<script>
+(function(){
+  var manifest = {
+    name: "BidElevate Draft Review",
+    short_name: "BidElevate",
+    description: "Review your tender draft and reply to BidElevate comments",
+    start_url: "./",
+    display: "standalone",
+    background_color: "#3e554f",
+    theme_color: "#3e554f",
+    orientation: "portrait-primary",
+    icons: [{
+      src: "https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png",
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "any maskable"
+    }]
+  };
+  var blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  document.getElementById('be-manifest').href = url;
+})();
+</script>
+<link rel="apple-touch-icon" href="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png">
+<title>BidElevate — Draft Review</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #3e554f;
+  --green-light: #eaf3ee;
+  --green-mid: #c5d9d2;
+  --text: #1a1a1a;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --bg: #f9fafb;
+  --white: #ffffff;
+  --red: #ef4444;
+  --red-light: #fee2e2;
+  --amber: #f59e0b;
+  --amber-light: #fef3c7;
+  --blue: #3b82f6;
+  --pink: #ec4899;
+  --teal: #14b8a6;
+  --purple: #8b5cf6;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+/* ---- SCREENS ---- */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ---- LOGIN ---- */
+#login-screen {
+  background: var(--green);
+  align-items: center;
+  justify-content: center;
+  padding: calc(24px + var(--safe-top)) 24px calc(24px + var(--safe-bottom));
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 36px 28px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-logo-img {
+  width: 140px;
+  height: auto;
+  margin: 0 auto 6px;
+  display: block;
+}
+
+.login-tagline {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.login-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  margin-bottom: 14px;
+  outline: none;
+  color: var(--text);
+  background: var(--white);
+  -webkit-appearance: none;
+}
+
+.login-input:focus { border-color: var(--green); }
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--green);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.login-error {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 10px;
+  display: none;
+  background: var(--red-light);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.login-switch {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.login-switch a {
+  color: var(--green);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---- APP HEADER ---- */
+.app-header {
+  background: var(--green);
+  padding: calc(14px + var(--safe-top)) 16px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.header-logo-img {
+  height: 28px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.pill {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill-white { background: rgba(255,255,255,0.2); color: #fff; }
+.pill-green { background: var(--green-light); color: var(--green); }
+.pill-amber { background: var(--amber-light); color: #92400e; }
+
+.header-signout {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- TABS (mobile nav) ---- */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
+/* ---- SETUP BODY ---- */
+#setup-screen { background: var(--bg); }
+
+.setup-tab-content { display: none; flex: 1; overflow-y: auto; }
+.setup-tab-content.active { display: block; }
+
+/* config panel */
+.config-panel {
+  padding: 20px 16px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+
+.config-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 14px;
+}
+
+.form-group { margin-bottom: 12px; }
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.form-input:focus, .form-textarea:focus { border-color: var(--green); }
+.form-textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+/* doc panel */
+.doc-panel {
+  padding: 20px 16px;
+  background: var(--white);
+}
+
+.doc-panel-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.doc-editor {
+  width: 100%;
+  min-height: 200px;
+  border: 1.5px dashed var(--green-mid);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fafffe;
+  outline: none;
+  line-height: 1.7;
+  -webkit-appearance: none;
+}
+
+.doc-editor:focus { border-color: var(--green); background: var(--white); }
+
+.doc-display {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  word-break: break-word;
+}
+
+/* comment highlight colours */
+.comment-highlight { border-radius: 2px; padding: 1px 2px; cursor: pointer; }
+
+/* comments panel */
+.comments-panel { padding: 16px; }
+
+.comments-panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.comment-count-badge {
+  font-size: 12px;
+  background: var(--green);
+  color: var(--white);
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.comment-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.comment-accent {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+}
+
+.comment-inner { padding-left: 8px; }
+
+.comment-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.comment-author { font-size: 12px; font-weight: 700; color: var(--green); }
+.comment-time { font-size: 11px; color: var(--text-muted); }
+
+.comment-quote {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.comment-body {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.comment-reply-display {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--green-light);
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.5;
+  border-left: 3px solid var(--green);
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.delete-btn:hover { color: var(--red); }
+
+/* add comment form */
+.add-comment-section {
+  padding: 16px;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.add-comment-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.color-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.color-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s;
+}
+
+.color-dot:active { transform: scale(0.9); }
+.color-dot.selected { border-color: var(--text); }
+
+.add-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--green);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* generate bar */
+.generate-bar {
+  padding: 16px;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.generate-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--green);
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin-bottom: 10px;
+}
+
+.link-box {
+  background: var(--green-light);
+  border: 1px solid var(--green-mid);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--green);
+  font-weight: 500;
+  word-break: break-all;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.copy-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--white);
+  color: var(--green);
+  border: 2px solid var(--green);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- CLIENT SCREEN ---- */
+#client-screen { background: var(--bg); }
+
+.client-tab-content { display: none; flex: 1; overflow-y: auto; }
+.client-tab-content.active { display: block; }
+
+.client-doc-panel {
+  padding: 20px 16px;
+  background: var(--white);
+}
+
+.client-doc-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.client-doc-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.client-comment-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.required-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.req-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+}
+
+.req-dot.done { background: var(--green); }
+.req-label { color: var(--text-muted); }
+.req-label.done { color: var(--green); }
+
+.client-reply-area {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  resize: none;
+  min-height: 80px;
+  margin-top: 10px;
+  line-height: 1.6;
+  -webkit-appearance: none;
+}
+
+.client-reply-area:focus { border-color: var(--green); }
+.client-reply-area.filled { border-color: var(--green); background: #fafffe; }
+
+/* submit bar */
+.submit-bar {
+  padding: 16px;
+  padding-bottom: calc(16px + var(--safe-bottom));
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.progress-label { color: var(--text-muted); }
+.progress-count { font-weight: 700; color: var(--text); }
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--border);
+  border-radius: 99px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--green);
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s;
+}
+
+.submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.submit-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ---- SUCCESS ---- */
+#success-screen {
+  background: var(--green);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.success-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 48px 28px;
+  max-width: 380px;
+  width: 100%;
+}
+
+.success-icon { font-size: 52px; margin-bottom: 16px; }
+
+.success-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+
+.success-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ---- EMPTY STATE ---- */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+/* ---- NOTIFICATION ---- */
+.notif {
+  position: fixed;
+  bottom: calc(20px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 22px;
+  border-radius: 10px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.notif.show { opacity: 1; }
+
+/* ---- INSTALL BANNER ---- */
+.install-banner {
+  display: none;
+  background: var(--green-light);
+  border-bottom: 1px solid var(--green-mid);
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--green);
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.install-banner.show { display: flex; }
+.install-banner-text { flex: 1; font-weight: 500; }
+
+.install-btn {
+  padding: 6px 14px;
+  background: var(--green);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dismiss-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* desktop two-panel layout */
+@media (min-width: 768px) {
+  .tab-bar { display: none; }
+
+  .setup-tab-content { display: block !important; }
+  .client-tab-content { display: block !important; }
+
+  #setup-doc-tab, #setup-comments-tab {
+    display: block;
+  }
+
+  .setup-body-desktop {
+    display: grid !important;
+    grid-template-columns: 1fr 380px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .setup-col-left {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .setup-col-right {
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .client-body-desktop {
+    display: grid !important;
+    grid-template-columns: 1fr 380px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .client-col-left {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    background: var(--white);
+  }
+
+  .client-col-right {
+    overflow-y: auto;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="notif" id="notif"></div>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner">
+  <span class="install-banner-text">📲 Add BidElevate to your home screen for quick access</span>
+  <button class="install-btn" id="install-btn">Add</button>
+  <button class="dismiss-btn" onclick="dismissInstall()">✕</button>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<div class="screen active" id="login-screen">
+  <div class="login-card">
+    <img class="login-logo-img" src="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png" alt="BidElevate" onerror="this.style.display='none';document.getElementById('login-text-logo').style.display='block'">
+    <div id="login-text-logo" style="display:none;font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px;">BidElevate</div>
+    <div class="login-tagline">Draft Review Portal</div>
+
+    <div id="jade-login">
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" id="jade-password" placeholder="Enter your password" autocomplete="current-password">
+      <button class="login-btn" onclick="jadeLogin()">Sign in as BidElevate</button>
+      <div class="login-error" id="jade-error">Incorrect password. Please try again.</div>
+      <div class="login-switch" style="margin-top:16px;">
+        Reviewing a draft? <a onclick="showClientLogin()">Tap here</a>
+      </div>
+    </div>
+
+    <div id="client-login" style="display:none;">
+      <label class="login-label">Your review code</label>
+      <input class="login-input" type="text" id="client-code" placeholder="e.g. CAREACALL-001" autocomplete="off" autocapitalize="characters">
+      <button class="login-btn" onclick="clientLogin()">Open my review</button>
+      <div class="login-error" id="client-error">Code not found. Please check with BidElevate.</div>
+      <div class="login-switch" style="margin-top:16px;">
+        BidElevate login? <a onclick="showJadeLogin()">Tap here</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== JADE SETUP SCREEN ===================== -->
+<div class="screen" id="setup-screen">
+  <div class="app-header">
+    <img class="header-logo-img" src="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png" alt="BidElevate" onerror="this.style.color='#fff';this.outerHTML='<span style=\'color:#fff;font-weight:700;font-size:16px;\'>BidElevate</span>'">
+    <div class="header-right">
+      <span class="pill pill-white" id="setup-comment-pill">0 comments</span>
+      <button class="header-signout" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- TABS (mobile only) -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchSetupTab('config', this)">Details</button>
+    <button class="tab-btn" onclick="switchSetupTab('doc', this)">Document</button>
+    <button class="tab-btn" onclick="switchSetupTab('comments', this)">Comments</button>
+  </div>
+
+  <!-- DESKTOP TWO-PANEL -->
+  <div class="setup-body-desktop" style="display:none;flex:1;overflow:hidden;">
+    <div class="setup-col-left">
+      <!-- config -->
+      <div class="config-panel">
+        <div class="config-title">Review details</div>
+        <div class="form-group">
+          <label class="form-label">Client name</label>
+          <input class="form-input" id="client-name-d" placeholder="e.g. Care At Call Ltd">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tender / section reference</label>
+          <input class="form-input" id="tender-ref-d" placeholder="e.g. Durham SL — Section 4">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Review code</label>
+          <input class="form-input" id="review-code-d" placeholder="e.g. CAREACALL-001" style="font-family:monospace;">
+        </div>
+      </div>
+      <!-- doc -->
+      <div class="doc-panel" style="margin-top:1px;">
+        <div class="doc-panel-label">Paste draft here</div>
+        <div class="doc-editor" id="doc-editor-d" contenteditable="true" spellcheck="true"></div>
+      </div>
+    </div>
+    <div class="setup-col-right">
+      <div class="comments-panel" id="comments-list-d-wrap">
+        <div class="comments-panel-title">
+          Comments
+          <span class="comment-count-badge" id="count-badge-d">0</span>
+        </div>
+        <div id="comments-list-d">
+          <div class="empty-state"><div class="empty-icon">💬</div>Add comments using the form below</div>
+        </div>
+      </div>
+      <div class="add-comment-section">
+        <div class="add-comment-title">Add a comment</div>
+        <div class="form-group">
+          <label class="form-label">Colour</label>
+          <div class="color-row" id="color-row-d">
+            <div class="color-dot selected" style="background:#f59e0b;" data-color="amber" onclick="selectColor(this,'d')"></div>
+            <div class="color-dot" style="background:#3b82f6;" data-color="blue" onclick="selectColor(this,'d')"></div>
+            <div class="color-dot" style="background:#ec4899;" data-color="pink" onclick="selectColor(this,'d')"></div>
+            <div class="color-dot" style="background:#14b8a6;" data-color="teal" onclick="selectColor(this,'d')"></div>
+            <div class="color-dot" style="background:#8b5cf6;" data-color="purple" onclick="selectColor(this,'d')"></div>
+            <div class="color-dot" style="background:#ef4444;" data-color="red" onclick="selectColor(this,'d')"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your comment</label>
+          <textarea class="form-textarea" id="comment-text-d" placeholder="Write your comment or question for the client…" style="min-height:80px;"></textarea>
+        </div>
+        <button class="add-btn" onclick="addComment('d')">Add comment</button>
+      </div>
+      <div class="generate-bar">
+        <div id="gen-bar-d">
+          <button class="generate-btn" onclick="generateLink('d')">Generate client link →</button>
+        </div>
+        <div id="link-bar-d" style="display:none;">
+          <div class="link-box" id="link-display-d"></div>
+          <button class="copy-btn" onclick="copyLink('d')">Copy link</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE TABS -->
+  <div class="setup-tab-content active" id="setup-config-tab">
+    <div class="config-panel">
+      <div class="config-title">Review details</div>
+      <div class="form-group">
+        <label class="form-label">Client name</label>
+        <input class="form-input" id="client-name-m" placeholder="e.g. Care At Call Ltd">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tender / section reference</label>
+        <input class="form-input" id="tender-ref-m" placeholder="e.g. Durham SL — Section 4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Review code (you'll share this with the client)</label>
+        <input class="form-input" id="review-code-m" placeholder="e.g. CAREACALL-001" style="font-family:monospace;" autocapitalize="characters">
+      </div>
+    </div>
+  </div>
+
+  <div class="setup-tab-content" id="setup-doc-tab">
+    <div class="doc-panel">
+      <div class="doc-panel-label">Paste your draft document here</div>
+      <textarea class="form-textarea" id="doc-editor-m" placeholder="Paste the full draft text here…" style="min-height:300px;border-style:dashed;border-color:var(--green-mid);background:#fafffe;font-size:14px;line-height:1.8;border-radius:10px;"></textarea>
+    </div>
+  </div>
+
+  <div class="setup-tab-content" id="setup-comments-tab">
+    <div class="comments-panel">
+      <div class="comments-panel-title">
+        Comments
+        <span class="comment-count-badge" id="count-badge-m">0</span>
+      </div>
+      <div id="comments-list-m">
+        <div class="empty-state"><div class="empty-icon">💬</div>Add your first comment below</div>
+      </div>
+    </div>
+    <div class="add-comment-section">
+      <div class="add-comment-title">Add a comment</div>
+      <div class="form-group">
+        <label class="form-label">Colour</label>
+        <div class="color-row" id="color-row-m">
+          <div class="color-dot selected" style="background:#f59e0b;" data-color="amber" onclick="selectColor(this,'m')"></div>
+          <div class="color-dot" style="background:#3b82f6;" data-color="blue" onclick="selectColor(this,'m')"></div>
+          <div class="color-dot" style="background:#ec4899;" data-color="pink" onclick="selectColor(this,'m')"></div>
+          <div class="color-dot" style="background:#14b8a6;" data-color="teal" onclick="selectColor(this,'m')"></div>
+          <div class="color-dot" style="background:#8b5cf6;" data-color="purple" onclick="selectColor(this,'m')"></div>
+          <div class="color-dot" style="background:#ef4444;" data-color="red" onclick="selectColor(this,'d')"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your comment</label>
+        <textarea class="form-textarea" id="comment-text-m" placeholder="Write your comment or question for the client…" style="min-height:80px;"></textarea>
+      </div>
+      <button class="add-btn" onclick="addComment('m')">Add comment</button>
+    </div>
+    <div class="generate-bar">
+      <div id="gen-bar-m">
+        <button class="generate-btn" onclick="generateLink('m')">Generate client link →</button>
+      </div>
+      <div id="link-bar-m" style="display:none;">
+        <div class="link-box" id="link-display-m"></div>
+        <button class="copy-btn" onclick="copyLink('m')">Copy link</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CLIENT REVIEW SCREEN ===================== -->
+<div class="screen" id="client-screen">
+  <div class="app-header">
+    <img class="header-logo-img" src="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png" alt="BidElevate" onerror="this.outerHTML='<span style=\'color:#fff;font-weight:700;font-size:16px;\'>BidElevate</span>'">
+    <div class="header-right">
+      <span class="pill pill-amber" id="client-progress-pill">0 of 0 replied</span>
+    </div>
+  </div>
+
+  <!-- TABS mobile -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchClientTab('draft', this)">📄 Draft</button>
+    <button class="tab-btn" onclick="switchClientTab('reply', this)" id="reply-tab-btn">💬 Reply <span id="reply-tab-badge" style="background:var(--red);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:4px;"></span></button>
+  </div>
+
+  <!-- DESKTOP TWO-PANEL -->
+  <div class="client-body-desktop" style="display:none;flex:1;overflow:hidden;">
+    <div class="client-col-left">
+      <div class="client-doc-panel">
+        <div class="client-doc-title" id="client-doc-title-d"></div>
+        <div class="client-doc-meta" id="client-doc-meta-d"></div>
+        <div class="doc-display" id="client-doc-content-d"></div>
+      </div>
+    </div>
+    <div class="client-col-right">
+      <div style="padding:16px;flex:1;overflow-y:auto;" id="client-comments-d"></div>
+      <div class="submit-bar">
+        <div class="progress-row">
+          <span class="progress-label">Replies completed</span>
+          <span class="progress-count" id="progress-text-d">0 / 0</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill-d" style="width:0%"></div>
+        </div>
+        <button class="submit-btn" id="submit-btn-d" disabled onclick="submitReview()">Reply to all comments to submit</button>
+        <div class="submit-hint" id="submit-hint-d">You must reply to every comment before submitting.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE TABS -->
+  <div class="client-tab-content active" id="client-draft-tab">
+    <div class="client-doc-panel">
+      <div class="client-doc-title" id="client-doc-title-m"></div>
+      <div class="client-doc-meta" id="client-doc-meta-m"></div>
+      <div class="doc-display" id="client-doc-content-m"></div>
+    </div>
+  </div>
+
+  <div class="client-tab-content" id="client-reply-tab">
+    <div style="padding:16px;" id="client-comments-m"></div>
+  </div>
+
+  <div class="submit-bar" id="client-submit-bar" style="display:none;">
+    <div class="progress-row">
+      <span class="progress-label">Replies completed</span>
+      <span class="progress-count" id="progress-text-m">0 / 0</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill-m" style="width:0%"></div>
+    </div>
+    <button class="submit-btn" id="submit-btn-m" disabled onclick="submitReview()">Reply to all comments to submit</button>
+    <div class="submit-hint" id="submit-hint-m">You must reply to every comment before submitting.</div>
+  </div>
+</div>
+
+<!-- ===================== SUCCESS ===================== -->
+<div class="screen" id="success-screen">
+  <div class="success-card">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Review submitted!</div>
+    <div class="success-sub">Thank you — your replies have been sent to BidElevate. We'll be in touch once we've reviewed your feedback and updated the draft.</div>
+  </div>
+</div>
+
+<script>
+// ---- CONFIG ----
+const JADE_PASSWORD = 'bidelevate2026';
+
+const COLORS = {
+  amber:  { bg: '#fef3c7', border: '#f59e0b', hex: '#f59e0b' },
+  blue:   { bg: '#eff6ff', border: '#3b82f6', hex: '#3b82f6' },
+  pink:   { bg: '#fdf2f8', border: '#ec4899', hex: '#ec4899' },
+  teal:   { bg: '#f0fdfa', border: '#14b8a6', hex: '#14b8a6' },
+  purple: { bg: '#f5f3ff', border: '#8b5cf6', hex: '#8b5cf6' },
+  red:    { bg: '#fee2e2', border: '#ef4444', hex: '#ef4444' },
+};
+
+// ---- STATE ----
+let state = {
+  comments: [],
+  selectedColor: { m: 'amber', d: 'amber' },
+  replies: {},
+  currentReview: null,
+};
+
+// ---- STORAGE ----
+function getAllReviews() {
+  try { return JSON.parse(localStorage.getItem('be_reviews') || '{}'); } catch(e) { return {}; }
+}
+function saveReview(code, data) {
+  const all = getAllReviews();
+  all[code] = data;
+  localStorage.setItem('be_reviews', JSON.stringify(all));
+}
+function getReview(code) {
+  return getAllReviews()[code] || null;
+}
+
+// ---- SCREEN ----
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name + '-screen').classList.add('active');
+}
+
+// ---- RESPONSIVE ----
+function isDesktop() { return window.innerWidth >= 768; }
+
+function applyLayout() {
+  const setupDesktop = document.querySelector('.setup-body-desktop');
+  const clientDesktop = document.querySelector('.client-body-desktop');
+  if (isDesktop()) {
+    if (setupDesktop) setupDesktop.style.display = 'grid';
+    if (clientDesktop) clientDesktop.style.display = 'grid';
+    document.querySelectorAll('.setup-tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.client-tab-content').forEach(t => t.style.display = 'none');
+    document.getElementById('client-submit-bar').style.display = 'none';
+  } else {
+    if (setupDesktop) setupDesktop.style.display = 'none';
+    if (clientDesktop) clientDesktop.style.display = 'none';
+    document.getElementById('setup-config-tab').style.display = 'block';
+  }
+}
+
+window.addEventListener('resize', applyLayout);
+
+// ---- TABS ----
+function switchSetupTab(name, btn) {
+  document.querySelectorAll('.setup-tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('#setup-screen .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('setup-' + name + '-tab').style.display = 'block';
+  btn.classList.add('active');
+}
+
+function switchClientTab(name, btn) {
+  document.querySelectorAll('.client-tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('#client-screen .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('client-' + name + '-tab').style.display = 'block';
+  btn.classList.add('active');
+
+  if (name === 'reply') {
+    document.getElementById('client-submit-bar').style.display = 'block';
+    document.getElementById('reply-tab-badge').textContent = '';
+  } else {
+    document.getElementById('client-submit-bar').style.display = 'none';
+  }
+}
+
+// ---- NOTIF ----
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 2500);
+}
+
+// ---- LOGIN ----
+function showClientLogin() {
+  document.getElementById('jade-login').style.display = 'none';
+  document.getElementById('client-login').style.display = 'block';
+}
+function showJadeLogin() {
+  document.getElementById('client-login').style.display = 'none';
+  document.getElementById('jade-login').style.display = 'block';
+}
+function jadeLogin() {
+  const pw = document.getElementById('jade-password').value;
+  if (pw === JADE_PASSWORD) {
+    showScreen('setup');
+    applyLayout();
+  } else {
+    document.getElementById('jade-error').style.display = 'block';
+  }
+}
+function clientLogin() {
+  const code = document.getElementById('client-code').value.trim().toUpperCase();
+  const review = getReview(code);
+  if (review) {
+    loadClientReview(code);
+  } else {
+    document.getElementById('client-error').style.display = 'block';
+  }
+}
+function logout() {
+  document.getElementById('jade-password').value = '';
+  showScreen('login');
+}
+
+document.getElementById('jade-password').addEventListener('keydown', e => { if (e.key === 'Enter') jadeLogin(); });
+document.getElementById('client-code').addEventListener('keydown', e => { if (e.key === 'Enter') clientLogin(); });
+
+// ---- COLOUR PICKER ----
+function selectColor(el, panel) {
+  document.querySelectorAll('#color-row-' + panel + ' .color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedColor[panel] = el.dataset.color;
+}
+
+// ---- ADD COMMENT ----
+function addComment(panel) {
+  const textEl = document.getElementById('comment-text-' + panel);
+  const text = textEl.value.trim();
+  if (!text) { showNotif('Please write a comment first.'); return; }
+
+  const id = 'c' + Date.now();
+  const color = state.selectedColor[panel];
+
+  state.comments.push({
+    id,
+    text,
+    color,
+    time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+  });
+
+  textEl.value = '';
+  renderSetupComments();
+  showNotif('Comment added ✓');
+}
+
+function deleteComment(id) {
+  state.comments = state.comments.filter(c => c.id !== id);
+  renderSetupComments();
+}
+
+function renderSetupComments() {
+  const count = state.comments.length;
+  document.getElementById('count-badge-m').textContent = count;
+  document.getElementById('count-badge-d').textContent = count;
+  document.getElementById('setup-comment-pill').textContent = count + (count === 1 ? ' comment' : ' comments');
+
+  const html = count === 0
+    ? '<div class="empty-state"><div class="empty-icon">💬</div>Add your first comment below</div>'
+    : state.comments.map(c => {
+        const col = COLORS[c.color];
+        return `
+          <div class="comment-card">
+            <div class="comment-accent" style="background:${col.hex};"></div>
+            <div class="comment-inner">
+              <div class="comment-top">
+                <span class="comment-author">BidElevate · ${c.time}</span>
+                <button class="delete-btn" onclick="deleteComment('${c.id}')">✕</button>
+              </div>
+              <div class="comment-body">${c.text}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+  document.getElementById('comments-list-m').innerHTML = html;
+  document.getElementById('comments-list-d').innerHTML = html;
+}
+
+// ---- GENERATE LINK ----
+function getVal(mId, dId) {
+  if (isDesktop()) return document.getElementById(dId).value.trim();
+  return document.getElementById(mId).value.trim();
+}
+
+function generateLink(panel) {
+  const clientName = getVal('client-name-m', 'client-name-d');
+  const tenderRef = getVal('tender-ref-m', 'tender-ref-d');
+  const reviewCode = getVal('review-code-m', 'review-code-d').toUpperCase();
+  const docText = isDesktop()
+    ? document.getElementById('doc-editor-d').innerText
+    : document.getElementById('doc-editor-m').value;
+
+  if (!clientName) { showNotif('Please enter a client name.'); return; }
+  if (!reviewCode) { showNotif('Please set a review code.'); return; }
+  if (state.comments.length === 0) { showNotif('Please add at least one comment.'); return; }
+  if (!docText.trim()) { showNotif('Please paste the draft document.'); return; }
+
+  saveReview(reviewCode, {
+    clientName,
+    tenderRef,
+    reviewCode,
+    docText,
+    comments: JSON.parse(JSON.stringify(state.comments)),
+    replies: {},
+    submitted: false,
+  });
+
+  const link = window.location.href.split('?')[0] + '?review=' + reviewCode;
+
+  ['m','d'].forEach(p => {
+    document.getElementById('link-display-' + p).textContent = link;
+    document.getElementById('gen-bar-' + p).style.display = 'none';
+    document.getElementById('link-bar-' + p).style.display = 'block';
+  });
+
+  showNotif('Link generated! Share the code: ' + reviewCode);
+}
+
+function copyLink(panel) {
+  const text = document.getElementById('link-display-' + panel).textContent;
+  navigator.clipboard.writeText(text).then(() => showNotif('Link copied ✓'));
+}
+
+// ---- CLIENT REVIEW ----
+function loadClientReview(code) {
+  const review = getReview(code);
+  if (!review) return;
+
+  state.currentReview = review;
+  state.replies = {};
+
+  const title = review.clientName + ' — ' + review.tenderRef;
+  const meta = 'Sent by BidElevate · Please reply to all comments below';
+
+  ['m','d'].forEach(s => {
+    const titleEl = document.getElementById('client-doc-title-' + s);
+    const metaEl = document.getElementById('client-doc-meta-' + s);
+    const contentEl = document.getElementById('client-doc-content-' + s);
+    if (titleEl) titleEl.textContent = title;
+    if (metaEl) metaEl.textContent = meta;
+    if (contentEl) contentEl.textContent = review.docText;
+  });
+
+  renderClientComments(review);
+  showScreen('client');
+  applyLayout();
+  updateProgress(review);
+
+  // show reply badge on mobile tab
+  const badge = document.getElementById('reply-tab-badge');
+  if (badge) badge.textContent = review.comments.length;
+}
+
+function renderClientComments(review) {
+  const html = review.comments.map(c => {
+    const col = COLORS[c.color];
+    return `
+      <div class="client-comment-card">
+        <div class="comment-accent" style="background:${col.hex};"></div>
+        <div class="comment-inner">
+          <div class="comment-top">
+            <span class="comment-author">BidElevate · ${c.time}</span>
+            <span class="required-indicator">
+              <span class="req-dot" id="dot-${c.id}"></span>
+              <span class="req-label" id="req-label-${c.id}">Required</span>
+            </span>
+          </div>
+          <div class="comment-body">${c.text}</div>
+          <textarea
+            class="client-reply-area"
+            id="reply-${c.id}"
+            placeholder="Type your reply here…"
+            oninput="onReplyInput('${c.id}')"
+            rows="3"
+          ></textarea>
+        </div>
+      </div>`;
+  }).join('');
+
+  ['m','d'].forEach(s => {
+    const el = document.getElementById('client-comments-' + s);
+    if (el) el.innerHTML = html || '<div class="empty-state">No comments on this draft.</div>';
+  });
+}
+
+function onReplyInput(id) {
+  const val = document.getElementById('reply-' + id).value.trim();
+  const dot = document.getElementById('dot-' + id);
+  const label = document.getElementById('req-label-' + id);
+  const textarea = document.getElementById('reply-' + id);
+
+  if (val.length > 0) {
+    state.replies[id] = val;
+    if (dot) { dot.classList.add('done'); }
+    if (label) { label.textContent = 'Done'; label.classList.add('done'); }
+    textarea.classList.add('filled');
+  } else {
+    delete state.replies[id];
+    if (dot) dot.classList.remove('done');
+    if (label) { label.textContent = 'Required'; label.classList.remove('done'); }
+    textarea.classList.remove('filled');
+  }
+
+  updateProgress(state.currentReview);
+}
+
+function updateProgress(review) {
+  const total = review.comments.length;
+  const done = Object.keys(state.replies).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+  const allDone = done === total && total > 0;
+
+  ['m','d'].forEach(s => {
+    const textEl = document.getElementById('progress-text-' + s);
+    const fillEl = document.getElementById('progress-fill-' + s);
+    const btn = document.getElementById('submit-btn-' + s);
+    const hint = document.getElementById('submit-hint-' + s);
+
+    if (textEl) textEl.textContent = done + ' / ' + total;
+    if (fillEl) fillEl.style.width = pct + '%';
+
+    if (btn) {
+      btn.disabled = !allDone;
+      btn.textContent = allDone ? 'Submit all replies →' : 'Reply to all comments to submit';
+    }
+    if (hint) {
+      hint.textContent = allDone
+        ? 'All comments replied to — ready to submit.'
+        : 'You must reply to every comment before submitting.';
+      hint.style.color = allDone ? 'var(--green)' : 'var(--text-muted)';
+    }
+  });
+
+  const pill = document.getElementById('client-progress-pill');
+  if (pill) {
+    pill.textContent = done + ' of ' + total + ' replied';
+    pill.className = 'pill ' + (allDone ? 'pill-green' : 'pill-amber');
+  }
+
+  // update reply tab badge
+  const badge = document.getElementById('reply-tab-badge');
+  if (badge) badge.textContent = total - done > 0 ? total - done : '';
+}
+
+function submitReview() {
+  const review = state.currentReview;
+  const total = review.comments.length;
+  const done = Object.keys(state.replies).length;
+  if (done < total) { showNotif('Please reply to all comments first.'); return; }
+
+  review.replies = Object.assign({}, state.replies);
+  review.submitted = true;
+  review.submittedAt = new Date().toLocaleString('en-GB');
+  saveReview(review.reviewCode, review);
+
+  showScreen('success');
+}
+
+// ---- PWA INSTALL ----
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      document.getElementById('install-banner').classList.remove('show');
+    }
+    deferredPrompt = null;
+  }
+});
+
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('show');
+  localStorage.setItem('install_dismissed', '1');
+}
+
+// ---- SERVICE WORKER ----
+if ('serviceWorker' in navigator) {
+  var swCode = `
+    const CACHE = 'be-review-v1';
+    self.addEventListener('install', e => { self.skipWaiting(); });
+    self.addEventListener('activate', e => { self.clients.claim(); });
+    self.addEventListener('fetch', e => {
+      e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    });
+  `;
+  var swBlob = new Blob([swCode], {type: 'application/javascript'});
+  var swUrl = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ---- URL PARAM ----
+const urlParams = new URLSearchParams(window.location.search);
+const reviewParam = urlParams.get('review');
+if (reviewParam) {
+  const review = getReview(reviewParam.toUpperCase());
+  if (review) {
+    loadClientReview(reviewParam.toUpperCase());
+  } else {
+    showClientLogin();
+    document.getElementById('client-code').value = reviewParam.toUpperCase();
+  }
+}
+
+// ---- INIT ----
+applyLayout();
+</script>
+</body>
+</html>
