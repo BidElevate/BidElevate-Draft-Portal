@@ -817,23 +817,23 @@ html, body {
     <div id="login-text-logo" style="display:none;font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px;">BidElevate</div>
     <div class="login-tagline">Draft Review Portal</div>
 
-    <div id="jade-login">
+    <div id="client-login">
+      <label class="login-label">Your unique review code</label>
+      <input class="login-input" type="text" id="client-code" placeholder="Enter the code BidElevate sent you" autocomplete="off" autocapitalize="characters">
+      <button class="login-btn" onclick="clientLogin()">Care provider sign in</button>
+      <div class="login-error" id="client-error">Code not found. Please check with BidElevate.</div>
+      <div class="login-switch" style="margin-top:24px;">
+        <a onclick="showJadeLogin()" style="font-size:12px; color:var(--text-muted);">BidElevate staff sign in</a>
+      </div>
+    </div>
+
+    <div id="jade-login" style="display:none;">
       <label class="login-label">Password</label>
       <input class="login-input" type="password" id="jade-password" placeholder="Enter your password" autocomplete="current-password">
       <button class="login-btn" onclick="jadeLogin()">Sign in as BidElevate</button>
       <div class="login-error" id="jade-error">Incorrect password. Please try again.</div>
       <div class="login-switch" style="margin-top:16px;">
-        Reviewing a draft? <a onclick="showClientLogin()">Tap here</a>
-      </div>
-    </div>
-
-    <div id="client-login" style="display:none;">
-      <label class="login-label">Your review code</label>
-      <input class="login-input" type="text" id="client-code" placeholder="e.g. CAREACALL-001" autocomplete="off" autocapitalize="characters">
-      <button class="login-btn" onclick="clientLogin()">Open my review</button>
-      <div class="login-error" id="client-error">Code not found. Please check with BidElevate.</div>
-      <div class="login-switch" style="margin-top:16px;">
-        BidElevate login? <a onclick="showJadeLogin()">Tap here</a>
+        <a onclick="showClientLogin()" style="font-size:12px; color:var(--text-muted);">← Back</a>
       </div>
     </div>
   </div>
@@ -1163,6 +1163,7 @@ function showClientLogin() {
 function showJadeLogin() {
   document.getElementById('client-login').style.display = 'none';
   document.getElementById('jade-login').style.display = 'block';
+  document.getElementById('jade-password').focus();
 }
 function jadeLogin() {
   const pw = document.getElementById('jade-password').value;
