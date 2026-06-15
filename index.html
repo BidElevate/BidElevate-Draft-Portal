@@ -751,20 +751,17 @@ html, body {
 
 /* desktop two-panel layout */
 @media (min-width: 768px) {
-  .tab-bar { display: none; }
-
-  .setup-tab-content { display: block !important; }
-  .client-tab-content { display: block !important; }
-
-  #setup-doc-tab, #setup-comments-tab {
-    display: block;
-  }
+  .tab-bar { display: none !important; }
+  .setup-tab-content { display: none !important; }
+  .client-tab-content { display: none !important; }
+  #client-submit-bar { display: none !important; }
 
   .setup-body-desktop {
     display: grid !important;
     grid-template-columns: 1fr 380px;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
   }
 
   .setup-col-left {
@@ -775,6 +772,8 @@ html, body {
   .setup-col-right {
     overflow-y: auto;
     background: var(--bg);
+    display: flex;
+    flex-direction: column;
   }
 
   .client-body-desktop {
@@ -782,6 +781,7 @@ html, body {
     grid-template-columns: 1fr 380px;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
   }
 
   .client-col-left {
