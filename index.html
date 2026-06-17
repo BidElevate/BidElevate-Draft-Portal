@@ -507,12 +507,22 @@ function sendNotificationEmail(review){
     return 'Comment '+(i+1)+':\n'+c.text+'\n\nClient reply:\n'+reply+'\n';
   }).join('\n---\n\n');
 
+  var fullContent =
+    'DRAFT DOCUMENT\n' +
+    '='.repeat(40) + '\n\n' +
+    (review.docText || '(no draft text)') +
+    '\n\n' +
+    '='.repeat(40) + '\n' +
+    'COMMENTS & CLIENT REPLIES\n' +
+    '='.repeat(40) + '\n\n' +
+    lines;
+
   var params={
     client_name: review.clientName,
     tender_ref: review.tenderRef,
     review_code: review.reviewCode,
     submitted_at: review.submittedAt,
-    comments_and_replies: lines
+    comments_and_replies: fullContent
   };
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
