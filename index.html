@@ -57,6 +57,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .field-input:focus{border-color:var(--green);}
 .field-textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;resize:vertical;min-height:280px;line-height:1.7;}
 .field-textarea:focus{border-color:var(--green);}
+.doc-editable{min-height:280px;line-height:1.7;overflow-y:auto;cursor:text;outline:none;white-space:pre-wrap;word-break:break-word;}
+.doc-editable:empty::before{content:attr(data-placeholder);color:var(--muted);}
+.hl-mark{border-radius:3px;padding:1px 2px;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,0.04);}
+.hl-mark:hover{filter:brightness(0.95);}
+.hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;}
+.hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;}
+.hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;}
+.hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;}
+.hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;}
+.hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;}
+.hl-mark.flash{animation:hlflash 0.9s ease;}
+@keyframes hlflash{0%{box-shadow:0 0 0 3px rgba(62,85,79,0.5);}100%{box-shadow:0 0 0 1px rgba(0,0,0,0.04);}}
 .comments-scroll{flex:1;overflow-y:auto;padding:16px;}
 .comment-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
 .c-accent{position:absolute;left:0;top:0;bottom:0;width:4px;}
@@ -64,6 +76,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .c-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
 .c-author{font-size:12px;font-weight:700;color:var(--green);}
 .c-body{font-size:13px;color:var(--text);line-height:1.6;}
+.c-quote{font-size:12px;color:var(--text);font-style:italic;background:rgba(0,0,0,0.04);border-left:3px solid var(--border);padding:4px 8px;margin-bottom:6px;border-radius:4px;}
+.flash-card{animation:cardflash 0.9s ease;}
+@keyframes cardflash{0%{box-shadow:0 0 0 3px rgba(62,85,79,0.4);}100%{box-shadow:none;}}
 .del-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;}
 .del-btn:hover{color:var(--red);}
 .add-comment-box{border-top:1px solid var(--border);background:#fff;padding:16px;}
@@ -193,8 +208,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="col-label">Review code (share this with your client)</div>
         <input class="field-input" id="review-code" placeholder="e.g. CAREACALL-001" style="font-family:monospace;" autocapitalize="characters">
       </div>
-      <div class="col-label">Paste your draft document here</div>
-      <textarea class="field-textarea" id="doc-text" placeholder="Paste the full draft text here…"></textarea>
+      <div class="col-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Paste your draft document here</span>
+        <span id="selection-hint" style="display:none;font-size:11px;color:#3e554f;font-weight:600;">✓ Text selected — add your comment below</span>
+      </div>
+      <div class="field-textarea doc-editable" id="doc-editor" contenteditable="true" data-placeholder="Paste the full draft text here…"></div>
     </div>
 
     <div class="comment-col">
@@ -286,6 +304,7 @@ let comments = [];
 let selectedColor = 'amber';
 let replies = {};
 let currentReview = null;
+let savedRange = null;
 
 function getReviews(){try{return JSON.parse(localStorage.getItem('be_reviews')||'{}');}catch(e){return{};}}
 function saveReview(code,data){const all=getReviews();all[code]=data;localStorage.setItem('be_reviews',JSON.stringify(all));}
@@ -301,6 +320,22 @@ function notif(msg){
   n.textContent=msg;n.classList.add('show');
   setTimeout(()=>n.classList.remove('show'),2500);
 }
+
+// DOC EDITOR SELECTION TRACKING
+const docEditor = document.getElementById('doc-editor');
+function trackSelection(){
+  const sel = window.getSelection();
+  const hint = document.getElementById('selection-hint');
+  if(sel && sel.rangeCount > 0 && !sel.isCollapsed && docEditor.contains(sel.anchorNode)){
+    savedRange = sel.getRangeAt(0).cloneRange();
+    hint.style.display = 'inline';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+docEditor.addEventListener('mouseup', trackSelection);
+docEditor.addEventListener('keyup', trackSelection);
+docEditor.addEventListener('touchend', trackSelection);
 
 // LOGIN
 document.getElementById('show-jade-btn').onclick=function(){
@@ -361,14 +396,47 @@ document.getElementById('add-comment-btn').onclick=function(){
   const text=document.getElementById('new-comment').value.trim();
   if(!text){notif('Please write a comment first.');return;}
   const id='c'+Date.now();
+  let quoteText = '';
+
+  if(savedRange && !savedRange.collapsed){
+    try{
+      const mark = document.createElement('mark');
+      mark.className = 'hl-mark hl-'+selectedColor;
+      mark.dataset.commentId = id;
+      mark.id = 'hl-'+id;
+      quoteText = savedRange.toString();
+      savedRange.surroundContents(mark);
+      mark.onclick = function(){ jumpToComment(id); };
+    }catch(e){
+      // selection spanned multiple elements/partial nodes — fall back to no highlight
+      console.warn('Could not wrap selection:', e);
+    }
+    savedRange = null;
+    document.getElementById('selection-hint').style.display = 'none';
+  }
+
   comments.push({
-    id,text,color:selectedColor,
+    id, text, color:selectedColor, quote:quoteText,
     time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
   });
   document.getElementById('new-comment').value='';
   renderComments();
   notif('Comment added ✓');
 };
+
+function jumpToComment(id){
+  const el = document.getElementById('comment-card-'+id) || document.getElementById('client-comment-card-'+id);
+  if(el){
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.classList.add('flash-card');
+    setTimeout(()=>el.classList.remove('flash-card'), 900);
+  }
+  const hl = document.getElementById('hl-'+id);
+  if(hl){
+    hl.classList.add('flash');
+    setTimeout(()=>hl.classList.remove('flash'), 900);
+  }
+}
 
 function renderComments(){
   const list=document.getElementById('comments-list');
@@ -379,12 +447,19 @@ function renderComments(){
   }
   list.innerHTML=comments.map(function(c){
     const col=COLORS[c.color];
-    return '<div class="comment-card"><div class="c-accent" style="background:'+col.hex+';"></div><div class="c-inner"><div class="c-top"><span class="c-author">BidElevate · '+c.time+'</span><button class="del-btn" onclick="deleteComment(\''+c.id+'\')">✕</button></div><div class="c-body">'+c.text+'</div></div></div>';
+    const quoteHtml = c.quote ? '<div class="c-quote">"'+c.quote+'"</div>' : '';
+    return '<div class="comment-card" id="comment-card-'+c.id+'"><div class="c-accent" style="background:'+col.hex+';"></div><div class="c-inner"><div class="c-top"><span class="c-author">BidElevate · '+c.time+'</span><button class="del-btn" onclick="deleteComment(\''+c.id+'\')">✕</button></div>'+quoteHtml+'<div class="c-body">'+c.text+'</div></div></div>';
   }).join('');
 }
 
 function deleteComment(id){
   comments=comments.filter(function(c){return c.id!==id;});
+  const hl = document.getElementById('hl-'+id);
+  if(hl){
+    const parent = hl.parentNode;
+    while(hl.firstChild) parent.insertBefore(hl.firstChild, hl);
+    parent.removeChild(hl);
+  }
   renderComments();
 }
 
@@ -393,15 +468,16 @@ document.getElementById('gen-btn').onclick=function(){
   const clientName=document.getElementById('client-name').value.trim();
   const tenderRef=document.getElementById('tender-ref').value.trim();
   const reviewCode=document.getElementById('review-code').value.trim().toUpperCase();
-  const docText=document.getElementById('doc-text').value.trim();
+  const docHTML=document.getElementById('doc-editor').innerHTML.trim();
 
   if(!clientName){notif('Please enter a client name.');return;}
   if(!reviewCode){notif('Please enter a review code.');return;}
   if(comments.length===0){notif('Please add at least one comment.');return;}
-  if(!docText){notif('Please paste the draft document.');return;}
+  if(!docHTML){notif('Please paste the draft document.');return;}
 
   saveReview(reviewCode,{
-    clientName,tenderRef,reviewCode,docText,
+    clientName,tenderRef,reviewCode,docHTML,
+    docText: document.getElementById('doc-editor').innerText,
     comments:JSON.parse(JSON.stringify(comments)),
     replies:{},submitted:false
   });
@@ -440,17 +516,26 @@ function loadClientReview(code){
   replies={};
   document.getElementById('client-title').textContent=review.clientName+' — '+review.tenderRef;
   document.getElementById('client-meta').textContent='Sent by BidElevate · Please reply to every comment below';
-  document.getElementById('client-doc').textContent=review.docText;
+  const docEl = document.getElementById('client-doc');
+  docEl.innerHTML = review.docHTML || review.docText || '';
+  bindHighlightClicks(docEl);
   renderClientComments(review);
   showScreen('client-screen');
   updateProgress(review);
+}
+
+function bindHighlightClicks(container){
+  container.querySelectorAll('.hl-mark').forEach(function(mark){
+    mark.onclick = function(){ jumpToComment(mark.dataset.commentId); };
+  });
 }
 
 function renderClientComments(review){
   const list=document.getElementById('client-comments');
   list.innerHTML=review.comments.map(function(c){
     const col=COLORS[c.color];
-    return '<div class="client-c-card"><div class="c-accent" style="background:'+col.hex+';"></div><div class="c-inner"><div class="req-row"><span class="c-author">BidElevate · '+c.time+'</span><span style="display:flex;align-items:center;gap:5px;"><span class="req-dot" id="dot-'+c.id+'"></span><span class="req-label" id="rl-'+c.id+'">Required</span></span></div><div class="c-body" style="margin-bottom:6px;">'+c.text+'</div><textarea class="reply-area" id="reply-'+c.id+'" placeholder="Type your reply here…" oninput="onReply(\''+c.id+'\')" rows="3"></textarea></div></div>';
+    const quoteHtml = c.quote ? '<div class="c-quote">"'+c.quote+'"</div>' : '';
+    return '<div class="client-c-card" id="client-comment-card-'+c.id+'"><div class="c-accent" style="background:'+col.hex+';"></div><div class="c-inner"><div class="req-row"><span class="c-author">BidElevate · '+c.time+'</span><span style="display:flex;align-items:center;gap:5px;"><span class="req-dot" id="dot-'+c.id+'"></span><span class="req-label" id="rl-'+c.id+'">Required</span></span></div>'+quoteHtml+'<div class="c-body" style="margin-bottom:6px;">'+c.text+'</div><textarea class="reply-area" id="reply-'+c.id+'" placeholder="Type your reply here…" oninput="onReply(\''+c.id+'\')" rows="3"></textarea></div></div>';
   }).join('');
 }
 
