@@ -602,8 +602,12 @@ function sendNotificationEmail(review){
     '='.repeat(40) + '\n\n' +
     lines;
 
+  // Link back into the portal's staff download view — handy backup/quick-reference when online.
+  var reviewLink = window.location.href.split('?')[0] + '?staffview=' + review.reviewCode;
+
   // Build the same branded HTML record the client/dashboard download button generates,
-  // then base64-encode it so it can be sent as an email attachment.
+  // then base64-encode it so EmailJS can attach it as a real file (requires a paid
+  // EmailJS plan with Dynamic Attachments enabled on the template).
   var attachmentBase64 = '';
   try{
     var recordHtml = buildDownload(review);
@@ -618,6 +622,7 @@ function sendNotificationEmail(review){
     review_code: review.reviewCode,
     submitted_at: review.submittedAt,
     comments_and_replies: fullContent,
+    review_link: reviewLink,
     attachment: attachmentBase64
   };
 
@@ -632,11 +637,13 @@ function buildDownload(review){
   var commentsHtml=review.comments.map(function(c,i){
     var col=colors[c.color]||'#3e554f';
     var reply=(review.replies&&review.replies[c.id])||'(no reply received)';
+    var quoteHtml = c.quote ? '<div style="font-size:13px;font-style:italic;color:#1a1a1a;background:rgba(0,0,0,0.04);border-left:3px solid '+col+';padding:6px 10px;margin-bottom:10px;border-radius:6px;">&ldquo;'+c.quote+'&rdquo;</div>' : '';
     return [
       '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;margin-bottom:14px;position:relative;overflow:hidden;">',
       '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+col+';"></div>',
       '<div style="padding-left:10px;">',
       '<div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Comment '+(i+1)+'</div>',
+      quoteHtml,
       '<div style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:12px;padding:10px 14px;background:#f9fafb;border-radius:8px;">'+c.text+'</div>',
       '<div style="font-size:11px;font-weight:600;color:#3e554f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Client reply</div>',
       '<div style="font-size:14px;color:#1a1a1a;line-height:1.6;padding:10px 14px;background:#eaf3ee;border-radius:8px;border-left:3px solid #3e554f;">'+reply+'</div>',
@@ -665,6 +672,12 @@ function buildDownload(review){
     '*{box-sizing:border-box;margin:0;padding:0;}',
     'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f9fafb;color:#1a1a1a;padding:40px 24px;}',
     '.wrap{max-width:800px;margin:0 auto;}',
+    '.hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;border-radius:3px;padding:1px 2px;}',
+    '.hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px;}',
+    '.hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px;}',
+    '.hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;border-radius:3px;padding:1px 2px;}',
+    '.hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;border-radius:3px;padding:1px 2px;}',
+    '.hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;border-radius:3px;padding:1px 2px;}',
     '@media print{body{background:#fff;padding:20px;}}',
     '</style></head><body><div class="wrap">',
     '<div style="background:#3e554f;border-radius:16px;padding:28px 32px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;">',
@@ -675,7 +688,7 @@ function buildDownload(review){
     '</div></div>',
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;">'+metaCards+'</div>',
     '<div style="'+sectionStyle+'">Draft document</div>',
-    '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;">'+( (review.docText||''))+'</div>',
+    '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;">'+( (review.docHTML||review.docText||''))+'</div>',
     '<div style="'+sectionStyle+'">Comments &amp; client replies</div>',
     commentsHtml,
     '<div style="margin-top:32px;text-align:center;font-size:12px;color:#6b7280;padding-top:20px;border-top:1px solid #e5e7eb;">',
@@ -710,7 +723,25 @@ function downloadByCode(code){
 // URL PARAM
 const urlParams=new URLSearchParams(window.location.search);
 const rp=urlParams.get('review');
-if(rp){
+const sv=urlParams.get('staffview');
+
+if(sv){
+  const rvStaff=getReview(sv.toUpperCase());
+  if(rvStaff){
+    showScreen('setup-screen');
+    document.querySelector('.setup-layout').style.display='none';
+    const banner=document.createElement('div');
+    banner.style.cssText='max-width:480px;margin:60px auto;padding:32px;background:#fff;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);';
+    banner.innerHTML='<div style="font-size:40px;margin-bottom:12px;">📄</div>'+
+      '<div style="font-size:18px;font-weight:700;color:#3e554f;margin-bottom:6px;">'+rvStaff.clientName+' — '+rvStaff.tenderRef+'</div>'+
+      '<div style="font-size:13px;color:#6b7280;margin-bottom:20px;">Review code '+rvStaff.reviewCode+' · Submitted '+(rvStaff.submittedAt||'')+'</div>'+
+      '<button id="staff-dl-btn" style="width:100%;padding:14px;background:#3e554f;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Download full record</button>';
+    document.getElementById('setup-screen').appendChild(banner);
+    document.getElementById('staff-dl-btn').onclick=function(){ triggerDownload(rvStaff); };
+  } else {
+    showScreen('login-screen');
+  }
+} else if(rp){
   const rv=getReview(rp.toUpperCase());
   if(rv){loadClientReview(rp.toUpperCase());}
   else{
