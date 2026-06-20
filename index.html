@@ -353,12 +353,17 @@ const docEditor = document.getElementById('doc-editor');
 function trackSelection(){
   const sel = window.getSelection();
   const hint = document.getElementById('selection-hint');
-  if(sel && sel.rangeCount > 0 && !sel.isCollapsed && docEditor.contains(sel.anchorNode)){
-    savedRange = sel.getRangeAt(0).cloneRange();
-    hint.style.display = 'inline';
-  } else {
-    hint.style.display = 'none';
+  if(sel && sel.rangeCount > 0 && !sel.isCollapsed){
+    const range = sel.getRangeAt(0);
+    const startsInside = docEditor.contains(range.startContainer);
+    const endsInside = docEditor.contains(range.endContainer);
+    if(startsInside && endsInside){
+      savedRange = range.cloneRange();
+      hint.style.display = 'inline';
+      return;
+    }
   }
+  hint.style.display = 'none';
 }
 docEditor.addEventListener('mouseup', trackSelection);
 docEditor.addEventListener('keyup', trackSelection);
@@ -466,7 +471,7 @@ document.querySelectorAll('.cdot').forEach(function(dot){
 function wrapRangeInHighlight(range, className, commentId){
   const marks = [];
   const walker = document.createTreeWalker(
-    range.commonAncestorContainer,
+    range.commonAncestorContainer.nodeType === 3 ? range.commonAncestorContainer.parentNode : range.commonAncestorContainer,
     NodeFilter.SHOW_TEXT,
     null
   );
@@ -476,18 +481,27 @@ function wrapRangeInHighlight(range, className, commentId){
     if(range.intersectsNode(node)) nodes.push(node);
   }
   nodes.forEach(function(textNode, idx){
+    // Skip text nodes with no actual content (e.g. stray whitespace between elements)
+    if(!textNode.textContent || !textNode.textContent.trim()) return;
     let start = (textNode === range.startContainer) ? range.startOffset : 0;
     let end = (textNode === range.endContainer) ? range.endOffset : textNode.length;
     if(start >= end) return;
     const sub = document.createRange();
-    sub.setStart(textNode, start);
-    sub.setEnd(textNode, end);
-    const mark = document.createElement('mark');
-    mark.className = className;
-    mark.dataset.commentId = commentId;
-    if(idx === 0) mark.id = 'hl-'+commentId;
-    sub.surroundContents(mark);
-    marks.push(mark);
+    try{
+      sub.setStart(textNode, start);
+      sub.setEnd(textNode, end);
+      const mark = document.createElement('mark');
+      mark.className = className;
+      mark.dataset.commentId = commentId;
+      if(marks.length === 0) mark.id = 'hl-'+commentId;
+      sub.surroundContents(mark);
+      marks.push(mark);
+    }catch(e){
+      // This specific text node couldn't be wrapped (e.g. partial overlap with an
+      // existing element boundary) — skip it and continue with the rest of the selection
+      // rather than aborting the whole highlight.
+      console.warn('Skipped wrapping one fragment:', e.message);
+    }
   });
   return marks;
 }
@@ -500,9 +514,9 @@ document.getElementById('add-comment-btn').onclick=function(){
 
   if(savedRange && !savedRange.collapsed){
     try{
-      quoteText = savedRange.toString();
       const marks = wrapRangeInHighlight(savedRange, 'hl-mark hl-'+selectedColor, id);
       marks.forEach(function(m){ m.onclick = function(){ jumpToComment(id); }; });
+      quoteText = marks.map(function(m){ return m.textContent.trim(); }).filter(Boolean).join(' / ');
     }catch(e){
       console.warn('Could not wrap selection:', e);
     }
