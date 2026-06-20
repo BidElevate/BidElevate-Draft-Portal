@@ -598,7 +598,7 @@ function renderDashboard(){
   dash.style.display='block';
   dash.innerHTML='<div class="dashboard"><div class="dash-title">Completed reviews <span class="dash-badge">'+submitted.length+'</span></div>'+
     submitted.map(function(r){
-      return '<div class="dash-item"><div class="dash-item-info"><div class="dash-item-name">'+r.clientName+'</div><div class="dash-item-meta">'+r.tenderRef+' · '+r.reviewCode+' · '+r.submittedAt+'</div></div><button class="dash-dl-btn" onclick="downloadByCode(\''+r.reviewCode+'\')">Download</button></div>';
+      return '<div class="dash-item"><div class="dash-item-info"><div class="dash-item-name">'+r.clientName+'</div><div class="dash-item-meta">'+r.tenderRef+' · '+r.reviewCode+' · '+r.submittedAt+'</div></div><div style="display:flex;gap:6px;"><button class="dash-dl-btn" onclick="downloadByCode(\''+r.reviewCode+'\')">Download</button><button class="dash-dl-btn" style="background:#6b7280;" onclick="pdfRecordByCode(\''+r.reviewCode+'\')" title="Simplified PDF for Drive filing / NotebookLM">PDF for filing</button></div></div>';
     }).join('')+'</div>';
 }
 
@@ -820,6 +820,88 @@ function triggerDownload(review){
   notif('Downloaded \u2713');
 }
 
+// PDF RECORD (for Drive filing / NotebookLM — simple stacked layout, no side-by-side,
+// since PDFs are static pages and can't do the sticky-scroll comments panel.)
+function buildPdfRecord(review){
+  var colors={amber:'#f59e0b',blue:'#3b82f6',pink:'#ec4899',teal:'#14b8a6',purple:'#8b5cf6',red:'#ef4444'};
+  var orgName = (review.clientName||'Client').toUpperCase();
+  var commentsHtml=review.comments.map(function(c,i){
+    var col=colors[c.color]||'#3e554f';
+    var reply=(review.replies&&review.replies[c.id])||'(no reply received)';
+    var quoteHtml = c.quote ? '<div style="font-size:12px;font-style:italic;color:#1a1a1a;background:rgba(0,0,0,0.04);border-left:3px solid '+col+';padding:5px 9px;margin-bottom:8px;border-radius:5px;">&ldquo;'+c.quote+'&rdquo;</div>' : '';
+    return [
+      '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px;position:relative;overflow:hidden;background:#fff;page-break-inside:avoid;">',
+      '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+col+';"></div>',
+      '<div style="padding-left:8px;">',
+      '<div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Comment '+(i+1)+'</div>',
+      quoteHtml,
+      '<div style="font-size:12px;color:#1a1a1a;line-height:1.5;margin-bottom:8px;padding:7px 10px;background:#f9fafb;border-radius:7px;">'+c.text+'</div>',
+      '<div style="font-size:9px;font-weight:600;color:#3e554f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">'+orgName+' reply</div>',
+      '<div style="font-size:12px;color:#1a1a1a;line-height:1.5;padding:7px 10px;background:#eaf3ee;border-radius:7px;border-left:3px solid #3e554f;">'+reply+'</div>',
+      '</div></div>'
+    ].join('');
+  }).join('');
+
+  var metaCards=[
+    ['Organisation / company',review.clientName],
+    ['Tender reference',review.tenderRef],
+    ['Review code',review.reviewCode],
+    ['Submitted',review.submittedAt||'N/A']
+  ].map(function(m){
+    return '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;">'
+      +'<div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">'+m[0]+'</div>'
+      +'<div style="font-size:13px;font-weight:500;color:#1a1a1a;">'+m[1]+'</div></div>';
+  }).join('');
+
+  var sectionStyle='font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb;';
+
+  return [
+    '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">',
+    '<title>BidElevate Review Record — '+review.reviewCode+'</title>',
+    '<style>',
+    '*{box-sizing:border-box;margin:0;padding:0;}',
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff;color:#1a1a1a;padding:28px;}',
+    '.wrap{max-width:760px;margin:0 auto;}',
+    '.hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;border-radius:3px;padding:1px 2px;}',
+    '.hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px;}',
+    '.hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px;}',
+    '.hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;border-radius:3px;padding:1px 2px;}',
+    '.hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;border-radius:3px;padding:1px 2px;}',
+    '.hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;border-radius:3px;padding:1px 2px;}',
+    '.draft-pane{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:18px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:24px;}',
+    '.draft-pane h2{font-size:15px;font-weight:700;color:#3e554f;margin:12px 0 5px;}',
+    '.draft-pane ul{margin:6px 0 6px 18px;padding:0;}',
+    '.draft-pane li{margin-bottom:3px;}',
+    '@media print{ body{padding:12px;} }',
+    '</style></head><body><div class="wrap">',
+    '<div style="background:#3e554f;border-radius:12px;padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">',
+    '<div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">BidElevate</div>',
+    '<div style="text-align:right;">',
+    '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">Draft Review Record</div>',
+    '<div style="font-size:11px;color:rgba(255,255,255,0.7);">Completed '+( (review.submittedAt||'N/A'))+'</div>',
+    '</div></div>',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">'+metaCards+'</div>',
+    '<div style="'+sectionStyle+'">Draft document</div>',
+    '<div class="draft-pane">'+( (review.docHTML||review.docText||''))+'</div>',
+    '<div style="'+sectionStyle+'">Comments &amp; client replies</div>',
+    commentsHtml,
+    '<div style="margin-top:18px;text-align:center;font-size:11px;color:#6b7280;padding-top:14px;border-top:1px solid #e5e7eb;">',
+    'Generated by BidElevate Draft Review Portal &nbsp;&middot;&nbsp; bidelevate.co.uk',
+    '</div></div>',
+    '<scr'+'ipt>window.onload=function(){ setTimeout(function(){ window.print(); }, 300); };</scr'+'ipt>',
+    '</body></html>'
+  ].join('');
+}
+
+function triggerPdfRecord(review){
+  var html = buildPdfRecord(review);
+  var win = window.open('', '_blank');
+  if(!win){ notif('Please allow pop-ups to create the PDF.'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
 document.getElementById('client-dl-btn').onclick=function(){
   if(currentReview) triggerDownload(currentReview);
 };
@@ -827,6 +909,11 @@ document.getElementById('client-dl-btn').onclick=function(){
 function downloadByCode(code){
   const review=getReview(code);
   if(review) triggerDownload(review);
+}
+
+function pdfRecordByCode(code){
+  const review=getReview(code);
+  if(review) triggerPdfRecord(review);
 }
 
 // URL PARAM
