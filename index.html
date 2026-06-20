@@ -229,16 +229,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="fmt-toolbar" id="fmt-toolbar">
         <button type="button" class="fmt-btn" data-cmd="bold" title="Bold"><b>B</b></button>
         <button type="button" class="fmt-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+        <button type="button" class="fmt-btn" data-cmd="underline" title="Underline"><u>U</u></button>
         <button type="button" class="fmt-btn" data-cmd="bullet" title="Bullet list">&#8226;&#8211;</button>
         <span class="fmt-divider"></span>
         <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="heading" title="Heading">Heading</button>
         <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="paragraph" title="Normal text">Normal</button>
         <span class="fmt-divider"></span>
-        <button type="button" class="fmt-color-dot" data-color="#1a1a1a" title="Default text" style="background:#1a1a1a;"></button>
-        <button type="button" class="fmt-color-dot" data-color="#3e554f" title="BidElevate green" style="background:#3e554f;"></button>
+        <button type="button" class="fmt-color-dot" data-color="#1a1a1a" title="Black" style="background:#1a1a1a;"></button>
         <button type="button" class="fmt-color-dot" data-color="#ef4444" title="Red" style="background:#ef4444;"></button>
-        <button type="button" class="fmt-color-dot" data-color="#f59e0b" title="Amber" style="background:#f59e0b;"></button>
-        <button type="button" class="fmt-color-dot" data-color="#3b82f6" title="Blue" style="background:#3b82f6;"></button>
+        <button type="button" class="fmt-color-dot" data-color="#1d4ed8" title="Corporate blue" style="background:#1d4ed8;"></button>
       </div>
       <div class="field-textarea doc-editable" id="doc-editor" contenteditable="true" data-placeholder="Paste the full draft text here…" style="border-radius:0 0 8px 8px;"></div>
     </div>
@@ -373,6 +372,7 @@ document.querySelectorAll('.fmt-btn').forEach(function(btn){
     var cmd = btn.dataset.cmd;
     if(cmd === 'bold'){ document.execCommand('bold'); }
     else if(cmd === 'italic'){ document.execCommand('italic'); }
+    else if(cmd === 'underline'){ document.execCommand('underline'); }
     else if(cmd === 'bullet'){ document.execCommand('insertUnorderedList'); }
     else if(cmd === 'heading'){ document.execCommand('formatBlock', false, 'H2'); }
     else if(cmd === 'paragraph'){ document.execCommand('formatBlock', false, 'P'); }
@@ -394,6 +394,9 @@ function updateToolbarState(){
   });
   document.querySelectorAll('.fmt-btn[data-cmd="italic"]').forEach(function(b){
     b.classList.toggle('active', document.queryCommandState('italic'));
+  });
+  document.querySelectorAll('.fmt-btn[data-cmd="underline"]').forEach(function(b){
+    b.classList.toggle('active', document.queryCommandState('underline'));
   });
   document.querySelectorAll('.fmt-btn[data-cmd="bullet"]').forEach(function(b){
     b.classList.toggle('active', document.queryCommandState('insertUnorderedList'));
@@ -457,6 +460,38 @@ document.querySelectorAll('.cdot').forEach(function(dot){
 });
 
 // ADD COMMENT
+// Wraps every text node touched by a range in its own <mark>, so highlighting works
+// reliably even when the selection sits inside bullets, bold/italic spans, etc.
+// (range.surroundContents() fails outright on those cases, which was the bug.)
+function wrapRangeInHighlight(range, className, commentId){
+  const marks = [];
+  const walker = document.createTreeWalker(
+    range.commonAncestorContainer,
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+  const nodes = [];
+  let node;
+  while((node = walker.nextNode())){
+    if(range.intersectsNode(node)) nodes.push(node);
+  }
+  nodes.forEach(function(textNode, idx){
+    let start = (textNode === range.startContainer) ? range.startOffset : 0;
+    let end = (textNode === range.endContainer) ? range.endOffset : textNode.length;
+    if(start >= end) return;
+    const sub = document.createRange();
+    sub.setStart(textNode, start);
+    sub.setEnd(textNode, end);
+    const mark = document.createElement('mark');
+    mark.className = className;
+    mark.dataset.commentId = commentId;
+    if(idx === 0) mark.id = 'hl-'+commentId;
+    sub.surroundContents(mark);
+    marks.push(mark);
+  });
+  return marks;
+}
+
 document.getElementById('add-comment-btn').onclick=function(){
   const text=document.getElementById('new-comment').value.trim();
   if(!text){notif('Please write a comment first.');return;}
@@ -465,15 +500,10 @@ document.getElementById('add-comment-btn').onclick=function(){
 
   if(savedRange && !savedRange.collapsed){
     try{
-      const mark = document.createElement('mark');
-      mark.className = 'hl-mark hl-'+selectedColor;
-      mark.dataset.commentId = id;
-      mark.id = 'hl-'+id;
       quoteText = savedRange.toString();
-      savedRange.surroundContents(mark);
-      mark.onclick = function(){ jumpToComment(id); };
+      const marks = wrapRangeInHighlight(savedRange, 'hl-mark hl-'+selectedColor, id);
+      marks.forEach(function(m){ m.onclick = function(){ jumpToComment(id); }; });
     }catch(e){
-      // selection spanned multiple elements/partial nodes — fall back to no highlight
       console.warn('Could not wrap selection:', e);
     }
     savedRange = null;
@@ -519,12 +549,11 @@ function renderComments(){
 
 function deleteComment(id){
   comments=comments.filter(function(c){return c.id!==id;});
-  const hl = document.getElementById('hl-'+id);
-  if(hl){
+  document.querySelectorAll('mark[data-comment-id="'+id+'"]').forEach(function(hl){
     const parent = hl.parentNode;
     while(hl.firstChild) parent.insertBefore(hl.firstChild, hl);
     parent.removeChild(hl);
-  }
+  });
   renderComments();
 }
 
