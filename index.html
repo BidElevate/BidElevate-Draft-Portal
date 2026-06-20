@@ -612,7 +612,7 @@ function renderDashboard(){
   dash.style.display='block';
   dash.innerHTML='<div class="dashboard"><div class="dash-title">Completed reviews <span class="dash-badge">'+submitted.length+'</span></div>'+
     submitted.map(function(r){
-      return '<div class="dash-item"><div class="dash-item-info"><div class="dash-item-name">'+r.clientName+'</div><div class="dash-item-meta">'+r.tenderRef+' · '+r.reviewCode+' · '+r.submittedAt+'</div></div><div style="display:flex;gap:6px;"><button class="dash-dl-btn" onclick="downloadByCode(\''+r.reviewCode+'\')">Download</button><button class="dash-dl-btn" style="background:#6b7280;" onclick="pdfRecordByCode(\''+r.reviewCode+'\')" title="Simplified PDF for Drive filing / NotebookLM">PDF for filing</button></div></div>';
+      return '<div class="dash-item"><div class="dash-item-info"><div class="dash-item-name">'+r.clientName+'</div><div class="dash-item-meta">'+r.tenderRef+' · '+r.reviewCode+' · '+r.submittedAt+'</div></div><div style="display:flex;gap:6px;"><button class="dash-dl-btn" onclick="downloadByCode(\''+r.reviewCode+'\')">Download</button><button class="dash-dl-btn" style="background:#6b7280;" onclick="pdfRecordByCode(\''+r.reviewCode+'\')" title="Simplified PDF for Drive filing / NotebookLM">PDF for filing</button><button class="dash-dl-btn" style="background:#fff;color:#ef4444;border:1.5px solid #ef4444;" onclick="deleteReviewByCode(\''+r.reviewCode+'\',\''+r.clientName.replace(/'/g,"\\'")+'\')" title="Delete this review permanently">Delete</button></div></div>';
     }).join('')+'</div>';
 }
 
@@ -928,6 +928,16 @@ function downloadByCode(code){
 function pdfRecordByCode(code){
   const review=getReview(code);
   if(review) triggerPdfRecord(review);
+}
+
+function deleteReviewByCode(code, clientName){
+  const ok = window.confirm('Permanently delete the review for "'+clientName+'" (code '+code+')?\n\nThis cannot be undone — make sure you\'ve already downloaded any copy you need first.');
+  if(!ok) return;
+  const all = getReviews();
+  delete all[code];
+  localStorage.setItem('be_reviews', JSON.stringify(all));
+  notif('Deleted ✓');
+  renderDashboard();
 }
 
 // URL PARAM
