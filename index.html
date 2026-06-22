@@ -1,3 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BidElevate">
+<meta name="theme-color" content="#3e554f">
+<link rel="apple-touch-icon" href="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png">
+<title>BidElevate — Draft Review</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --green:#3e554f;--gl:#eaf3ee;--gm:#c5d9d2;
+  --text:#1a1a1a;--muted:#6b7280;--border:#e5e7eb;
+  --bg:#f9fafb;--white:#fff;
+  --red:#ef4444;--rl:#fee2e2;
+  --amber:#f59e0b;--al:#fef3c7;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;}
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* LOGIN */
+#login-screen{background:var(--green);align-items:center;justify-content:center;padding:24px;}
+.login-card{background:#fff;border-radius:20px;padding:36px 28px;width:100%;max-width:400px;text-align:center;}
+.login-logo{width:140px;height:auto;margin:0 auto 6px;display:block;}
+.login-logo-text{font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px;}
+.login-tagline{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.login-label{display:block;font-size:13px;font-weight:600;color:var(--text);text-align:left;margin-bottom:6px;}
+.login-input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;margin-bottom:14px;outline:none;color:var(--text);background:#fff;-webkit-appearance:none;font-family:inherit;}
+.login-input:focus{border-color:var(--green);}
+.login-btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;}
+.login-err{color:var(--red);font-size:13px;margin-top:10px;display:none;background:var(--rl);padding:8px 12px;border-radius:8px;}
+.login-switch{margin-top:20px;font-size:13px;color:var(--muted);}
+.login-switch a{color:var(--green);font-weight:600;cursor:pointer;text-decoration:underline;}
+
+/* HEADER */
+.app-header{background:var(--green);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.header-logo{height:28px;width:auto;filter:brightness(0) invert(1);}
+.header-logo-text{font-size:17px;font-weight:700;color:#fff;}
+.pill{font-size:12px;padding:4px 12px;border-radius:20px;font-weight:600;}
+.pill-white{background:rgba(255,255,255,0.2);color:#fff;}
+.pill-green{background:var(--gl);color:var(--green);}
+.pill-amber{background:var(--al);color:#92400e;}
+.signout-btn{font-size:13px;color:rgba(255,255,255,0.8);background:none;border:none;cursor:pointer;font-family:inherit;}
+
+/* JADE SETUP */
+#setup-screen{background:var(--bg);}
+.setup-layout{display:grid;grid-template-columns:1fr 360px;flex:1;min-height:calc(100vh - 61px);}
+@media(max-width:768px){.setup-layout{grid-template-columns:1fr;}}
+.doc-col{background:#fff;border-right:1px solid var(--border);padding:24px;overflow-y:auto;}
+.comment-col{background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
+.col-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+.field-group{margin-bottom:12px;}
+.field-input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:15px;font-family:inherit;color:var(--text);background:#fff;outline:none;}
+.field-input:focus{border-color:var(--green);}
+.field-textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;resize:vertical;min-height:280px;line-height:1.7;}
+.field-textarea:focus{border-color:var(--green);}
+.doc-editable{min-height:280px;line-height:1.7;overflow-y:auto;cursor:text;outline:none;white-space:pre-wrap;word-break:break-word;}
+.doc-editable h2{font-size:17px;font-weight:700;color:#3e554f;margin:14px 0 6px;}
+.fmt-toolbar{display:flex;align-items:center;gap:4px;padding:6px;background:#f3f4f6;border:1.5px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;}
+.fmt-btn{min-width:30px;height:30px;padding:0 8px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;}
+.fmt-btn:hover{background:#fff;border-color:var(--border);}
+.fmt-btn.active{background:var(--gl);border-color:var(--gm);color:var(--green);}
+.fmt-btn-wide{font-size:12px;font-weight:600;}
+.fmt-divider{width:1px;height:20px;background:var(--border);margin:0 4px;}
+.fmt-color-dot{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;}
+.fmt-color-dot:hover{border-color:var(--border);}
+.doc-editable ul{margin:8px 0 8px 20px;padding:0;}
+.doc-editable li{margin-bottom:4px;}
+.doc-editable:empty::before{content:attr(data-placeholder);color:var(--muted);}
+.hl-mark{border-radius:3px;padding:1px 2px;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,0.04);}
+.hl-mark:hover{filter:brightness(0.95);}
+.hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;}
+.hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;}
+.hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;}
+.hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;}
+.hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;}
+.hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;}
+.hl-mark.flash{animation:hlflash 0.9s ease;}
+@keyframes hlflash{0%{box-shadow:0 0 0 3px rgba(62,85,79,0.5);}100%{box-shadow:0 0 0 1px rgba(0,0,0,0.04);}}
+.comments-scroll{flex:1;overflow-y:auto;padding:16px;}
+.comment-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
+.c-accent{position:absolute;left:0;top:0;bottom:0;width:4px;}
+.c-inner{padding-left:8px;}
+.c-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.c-author{font-size:12px;font-weight:700;color:var(--green);}
+.c-body{font-size:13px;color:var(--text);line-height:1.6;}
+.c-quote{font-size:12px;color:var(--text);font-style:italic;background:rgba(0,0,0,0.04);border-left:3px solid var(--border);padding:4px 8px;margin-bottom:6px;border-radius:4px;}
+.flash-card{animation:cardflash 0.9s ease;}
+@keyframes cardflash{0%{box-shadow:0 0 0 3px rgba(62,85,79,0.4);}100%{box-shadow:none;}}
+.del-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;}
+.del-btn:hover{color:var(--red);}
+.add-comment-box{border-top:1px solid var(--border);background:#fff;padding:16px;}
+.color-row{display:flex;gap:10px;margin-bottom:12px;}
+.cdot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;}
+.cdot.sel{border-color:var(--text);}
+.add-btn{width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+.gen-bar{border-top:1px solid var(--border);background:#fff;padding:16px;}
+.gen-btn{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+.link-box{background:var(--gl);border:1px solid var(--gm);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--green);word-break:break-all;margin-bottom:10px;line-height:1.5;}
+.copy-btn{width:100%;padding:11px;background:#fff;color:var(--green);border:2px solid var(--green);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;line-height:1.6;}
+
+/* CLIENT SCREEN */
+#client-screen{background:var(--bg);}
+.client-layout{display:grid;grid-template-columns:1fr 380px;flex:1;min-height:calc(100vh - 61px);}
+@media(max-width:768px){.client-layout{grid-template-columns:1fr;}}
+.client-doc-col{background:#fff;border-right:1px solid var(--border);padding:24px;overflow-y:auto;}
+.client-doc-title{font-size:18px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.client-doc-meta{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.client-doc-text{font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.client-doc-text h2{font-size:17px;font-weight:700;color:var(--green);margin:14px 0 6px;}
+.client-doc-text ul{margin:8px 0 8px 20px;padding:0;}
+.client-doc-text li{margin-bottom:4px;}
+.client-comment-col{background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
+.client-comments-scroll{flex:1;overflow-y:auto;padding:16px;}
+.client-c-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
+.req-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.req-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.req-dot.done{background:var(--green);}
+.req-label{font-size:11px;font-weight:600;color:var(--muted);}
+.req-label.done{color:var(--green);}
+.reply-area{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-size:15px;font-family:inherit;color:var(--text);background:#fff;outline:none;resize:none;min-height:80px;margin-top:8px;line-height:1.6;-webkit-appearance:none;}
+.reply-area:focus{border-color:var(--green);}
+.reply-area.filled{border-color:var(--green);background:#fafffe;}
+.submit-bar{border-top:1px solid var(--border);background:#fff;padding:16px;flex-shrink:0;}
+.prog-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;}
+.prog-label{color:var(--muted);}
+.prog-count{font-weight:700;}
+.prog-track{width:100%;height:8px;background:var(--border);border-radius:99px;margin-bottom:12px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--green);border-radius:99px;transition:width 0.3s;}
+.submit-btn{width:100%;padding:15px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+.submit-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.submit-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;}
+
+/* SUCCESS */
+#success-screen{background:var(--green);align-items:center;justify-content:center;padding:24px;text-align:center;}
+.success-card{background:#fff;border-radius:20px;padding:48px 28px;max-width:400px;width:100%;}
+.success-icon{font-size:52px;margin-bottom:16px;}
+.success-title{font-size:22px;font-weight:700;color:var(--green);margin-bottom:10px;}
+.success-sub{font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.dl-btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+
+/* DASHBOARD */
+.dashboard{border-top:1px solid var(--border);background:#fff;padding:16px;}
+.dash-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.dash-badge{background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;}
+.dash-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.dash-item-info{font-size:13px;}
+.dash-item-name{font-weight:500;color:var(--text);}
+.dash-item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.dash-dl-btn{padding:7px 14px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;}
+
+/* NOTIF */
+.notif{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:14px;font-weight:500;padding:12px 22px;border-radius:10px;z-index:9999;opacity:0;transition:opacity 0.2s;white-space:nowrap;pointer-events:none;}
+.notif.show{opacity:1;}
+
+/* COLORS */
+.COLORS{}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<div class="notif" id="notif"></div>
+
+<!-- LOGIN -->
+<div class="screen active" id="login-screen">
+  <div class="login-card">
+    <img class="login-logo" src="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png" alt="BidElevate" onerror="this.style.display='none';document.getElementById('llt').style.display='block'">
+    <div id="llt" style="display:none;" class="login-logo-text">BidElevate</div>
+    <div class="login-tagline">Draft Review Portal</div>
+
+    <div id="client-panel">
+      <label class="login-label">Your unique review code</label>
+      <input class="login-input" type="text" id="client-code" placeholder="Enter the code BidElevate sent you" autocapitalize="characters" autocomplete="off">
+      <button class="login-btn" id="client-btn">Care provider sign in</button>
+      <div class="login-err" id="client-err">Code not found. Please check with BidElevate.</div>
+      <div class="login-switch" style="margin-top:24px;">
+        <a id="show-jade-btn" style="font-size:12px;color:var(--muted);">BidElevate staff sign in</a>
+      </div>
+    </div>
+
+    <div id="jade-panel" style="display:none;">
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" id="jade-pw" placeholder="Enter your password" autocomplete="current-password">
+      <button class="login-btn" id="jade-btn">Sign in as BidElevate</button>
+      <div class="login-err" id="jade-err">Incorrect password. Please try again.</div>
+      <div class="login-switch" style="margin-top:16px;">
+        <a id="show-client-btn" style="font-size:12px;color:var(--muted);">← Back</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JADE SETUP -->
+<div class="screen" id="setup-screen">
+  <div class="app-header">
+    <img class="header-logo" src="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png" alt="BidElevate" onerror="this.style.display='none';document.getElementById('hlt').style.display='block'">
+    <span id="hlt" style="display:none;" class="header-logo-text">BidElevate</span>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="pill pill-white" id="comment-pill">0 comments</span>
+      <button class="signout-btn" id="signout-btn">Sign out</button>
+    </div>
+  </div>
+
+  <div class="setup-layout">
+    <div class="doc-col">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="field-group">
+          <div class="col-label">Client name</div>
+          <input class="field-input" id="client-name" placeholder="e.g. Care At Call Ltd">
+        </div>
+        <div class="field-group">
+          <div class="col-label">Tender reference</div>
+          <input class="field-input" id="tender-ref" placeholder="e.g. Durham SL — Q2">
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:16px;">
+        <div class="col-label">Review code (share this with your client)</div>
+        <input class="field-input" id="review-code" placeholder="e.g. CAREACALL-001" style="font-family:monospace;" autocapitalize="characters">
+      </div>
+      <div class="col-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Paste your draft document here</span>
+        <span id="selection-hint" style="display:none;font-size:11px;color:#3e554f;font-weight:600;">✓ Text selected — add your comment below</span>
+      </div>
+      <div class="fmt-toolbar" id="fmt-toolbar">
+        <button type="button" class="fmt-btn" data-cmd="bold" title="Bold"><b>B</b></button>
+        <button type="button" class="fmt-btn" data-cmd="italic" title="Italic"><i>I</i></button>
+        <button type="button" class="fmt-btn" data-cmd="underline" title="Underline"><u>U</u></button>
+        <button type="button" class="fmt-btn" data-cmd="bullet" title="Bullet list">&#8226;&#8211;</button>
+        <span class="fmt-divider"></span>
+        <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="heading" title="Heading">Heading</button>
+        <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="paragraph" title="Normal text">Normal</button>
+        <span class="fmt-divider"></span>
+        <button type="button" class="fmt-color-dot" data-color="#1a1a1a" title="Black" style="background:#1a1a1a;"></button>
+        <button type="button" class="fmt-color-dot" data-color="#ef4444" title="Red" style="background:#ef4444;"></button>
+        <button type="button" class="fmt-color-dot" data-color="#1d4ed8" title="Corporate blue" style="background:#1d4ed8;"></button>
+      </div>
+      <div class="field-textarea doc-editable" id="doc-editor" contenteditable="true" data-placeholder="Paste the full draft text here…" style="border-radius:0 0 8px 8px;"></div>
+    </div>
+
+    <div class="comment-col">
+      <div class="comments-scroll" id="comments-list">
+        <div class="empty-state">💬<br><br>Add comments using the form below.<br>As many as you like — no limit.</div>
+      </div>
+
+      <div class="add-comment-box">
+        <div class="col-label" style="margin-bottom:8px;">Highlight colour</div>
+        <div class="color-row" id="color-row">
+          <div class="cdot sel" style="background:#f59e0b;" data-color="amber"></div>
+          <div class="cdot" style="background:#3b82f6;" data-color="blue"></div>
+          <div class="cdot" style="background:#ec4899;" data-color="pink"></div>
+          <div class="cdot" style="background:#14b8a6;" data-color="teal"></div>
+          <div class="cdot" style="background:#8b5cf6;" data-color="purple"></div>
+          <div class="cdot" style="background:#ef4444;" data-color="red"></div>
+        </div>
+        <div class="col-label" style="margin-bottom:6px;">Your comment or question</div>
+        <textarea class="field-textarea" id="new-comment" placeholder="Write your comment for the client…" style="min-height:70px;"></textarea>
+        <button class="add-btn" id="add-comment-btn">Add comment</button>
+      </div>
+
+      <div class="gen-bar">
+        <div id="gen-section">
+          <button class="gen-btn" id="gen-btn">Generate client link →</button>
+        </div>
+        <div id="link-section" style="display:none;">
+          <div class="link-box" id="link-box"></div>
+          <button class="copy-btn" id="copy-btn">Copy link</button>
+        </div>
+      </div>
+
+      <div id="dashboard" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT REVIEW -->
+<div class="screen" id="client-screen">
+  <div class="app-header">
+    <img class="header-logo" src="https://bidelevate.co.uk/wp-content/uploads/2026/05/BidElevate-Logo.png" alt="BidElevate" onerror="this.style.display='none'">
+    <span class="pill pill-amber" id="client-pill">0 of 0 replied</span>
+  </div>
+
+  <div class="client-layout">
+    <div class="client-doc-col">
+      <div class="client-doc-title" id="client-title"></div>
+      <div class="client-doc-meta" id="client-meta"></div>
+      <div class="client-doc-text" id="client-doc"></div>
+    </div>
+
+    <div class="client-comment-col">
+      <div class="client-comments-scroll" id="client-comments"></div>
+      <div class="submit-bar">
+        <div class="prog-row">
+          <span class="prog-label">Replies completed</span>
+          <span class="prog-count" id="prog-text">0 / 0</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+        <button class="submit-btn" id="submit-btn" disabled>Reply to all comments to submit</button>
+        <div class="submit-hint" id="submit-hint">You must reply to every comment before submitting.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="screen" id="success-screen">
+  <div class="success-card">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Review submitted!</div>
+    <div class="success-sub">Thank you — your replies have been sent to BidElevate. We'll be in touch once we've reviewed your feedback and updated the draft.</div>
+    <button class="dl-btn" id="client-dl-btn">Download a copy of your replies</button>
+  </div>
+</div>
+
+<script>
+const PASSWORD = 'bidelevate2026';
+const EMAILJS_SERVICE_ID = 'service_yf3sg5y';
+const EMAILJS_TEMPLATE_ID = 'template_uq8r2ob';
+const EMAILJS_PUBLIC_KEY = 'ZxayBeLVQRYJoLquJ';
+if(window.emailjs){emailjs.init(EMAILJS_PUBLIC_KEY);}
+const COLORS = {
+  amber:{hex:'#f59e0b'},blue:{hex:'#3b82f6'},pink:{hex:'#ec4899'},
+  teal:{hex:'#14b8a6'},purple:{hex:'#8b5cf6'},red:{hex:'#ef4444'}
+};
+
+let comments = [];
+let selectedColor = 'amber';
+let replies = {};
+let currentReview = null;
+let savedRange = null;
+
+// --- Storage layer: Supabase REST (draft_reviews table) ---
+// Replaces the old localStorage-based storage. localStorage only ever lived in
+// the browser that created it, so a client opening their review on their own
+// device could never actually see it — this fixes that by storing reviews in
+// a shared Supabase table that both BidElevate and clients read from.
+const SUPABASE_URL = 'https://oyagzfirgdlgmihssuyr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SUh9E3_UoWClnAVWmZh1sw_rFrMM5JW';
+const SUPABASE_HEADERS = {
+  'apikey': SUPABASE_ANON_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+};
+
+// Maps between the app's camelCase review object and the DB's snake_case columns.
+function toDbRow(code, data){
+  return {
+    review_code: code,
+    client_name: data.clientName || '',
+    tender_ref: data.tenderRef || '',
+    doc_html: data.docHTML || '',
+    doc_text: data.docText || '',
+    comments: data.comments || [],
+    replies: data.replies || {},
+    submitted: !!data.submitted,
+    submitted_at: data.submittedAt || null
+  };
+}
+function fromDbRow(row){
+  return {
+    reviewCode: row.review_code,
+    clientName: row.client_name,
+    tenderRef: row.tender_ref,
+    docHTML: row.doc_html,
+    docText: row.doc_text,
+    comments: row.comments || [],
+    replies: row.replies || {},
+    submitted: !!row.submitted,
+    submittedAt: row.submitted_at
+  };
+}
+
+// Fetch a single review by its code. Returns null if no review exists with that
+// code. Throws if the request itself fails (network/Supabase error), so callers
+// can tell "wrong code" apart from "something's broken" and message accordingly.
+async function getReview(code){
+  const url = SUPABASE_URL + '/rest/v1/draft_reviews?review_code=eq.' + encodeURIComponent(code) + '&select=*';
+  const res = await fetch(url, { headers: SUPABASE_HEADERS });
+  if(!res.ok){
+    throw new Error('Supabase getReview failed: ' + res.status);
+  }
+  const rows = await res.json();
+  if(!rows.length) return null;
+  return fromDbRow(rows[0]);
+}
+
+// Fetch every review (used for the staff dashboard list of completed reviews).
+async function getReviews(){
+  const url = SUPABASE_URL + '/rest/v1/draft_reviews?select=*';
+  const res = await fetch(url, { headers: SUPABASE_HEADERS });
+  if(!res.ok){
+    throw new Error('Supabase getReviews failed: ' + res.status);
+  }
+  const rows = await res.json();
+  return rows.map(fromDbRow);
+}
+
+// Insert or fully overwrite a review row, keyed on review_code.
+async function saveReview(code, data){
+  const url = SUPABASE_URL + '/rest/v1/draft_reviews?on_conflict=review_code';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: Object.assign({}, SUPABASE_HEADERS, {
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    }),
+    body: JSON.stringify(toDbRow(code, data))
+  });
+  if(!res.ok){
+    throw new Error('Supabase saveReview failed: ' + res.status);
+  }
+}
+
+// Permanently remove a review row.
+async function deleteReview(code){
+  const url = SUPABASE_URL + '/rest/v1/draft_reviews?review_code=eq.' + encodeURIComponent(code);
+  const res = await fetch(url, { method: 'DELETE', headers: SUPABASE_HEADERS });
+  if(!res.ok){
+    throw new Error('Supabase deleteReview failed: ' + res.status);
+  }
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function notif(msg){
+  const n=document.getElementById('notif');
+  n.textContent=msg;n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),2500);
+}
+
+// DOC EDITOR SELECTION TRACKING
+const docEditor = document.getElementById('doc-editor');
+function trackSelection(){
+  const sel = window.getSelection();
+  const hint = document.getElementById('selection-hint');
+  if(sel && sel.rangeCount > 0 && !sel.isCollapsed){
+    const range = sel.getRangeAt(0);
+    const startsInside = docEditor.contains(range.startContainer);
+    const endsInside = docEditor.contains(range.endContainer);
+    if(startsInside && endsInside){
+      savedRange = range.cloneRange();
+      hint.style.display = 'inline';
+      return;
+    }
+  }
+  hint.style.display = 'none';
+}
+docEditor.addEventListener('mouseup', trackSelection);
+docEditor.addEventListener('keyup', trackSelection);
+docEditor.addEventListener('touchend', trackSelection);
+
+// FORMATTING TOOLBAR
+document.querySelectorAll('.fmt-btn').forEach(function(btn){
+  btn.addEventListener('mousedown', function(e){ e.preventDefault(); }); // keep selection alive
+  btn.addEventListener('click', function(){
+    docEditor.focus();
+    var cmd = btn.dataset.cmd;
+    if(cmd === 'bold'){ document.execCommand('bold'); }
+    else if(cmd === 'italic'){ document.execCommand('italic'); }
+    else if(cmd === 'underline'){ document.execCommand('underline'); }
+    else if(cmd === 'bullet'){ document.execCommand('insertUnorderedList'); }
+    else if(cmd === 'heading'){ document.execCommand('formatBlock', false, 'H2'); }
+    else if(cmd === 'paragraph'){ document.execCommand('formatBlock', false, 'P'); }
+    updateToolbarState();
+  });
+});
+
+document.querySelectorAll('.fmt-color-dot').forEach(function(dot){
+  dot.addEventListener('mousedown', function(e){ e.preventDefault(); });
+  dot.addEventListener('click', function(){
+    docEditor.focus();
+    document.execCommand('foreColor', false, dot.dataset.color);
+  });
+});
+
+function updateToolbarState(){
+  document.querySelectorAll('.fmt-btn[data-cmd="bold"]').forEach(function(b){
+    b.classList.toggle('active', document.queryCommandState('bold'));
+  });
+  document.querySelectorAll('.fmt-btn[data-cmd="italic"]').forEach(function(b){
+    b.classList.toggle('active', document.queryCommandState('italic'));
+  });
+  document.querySelectorAll('.fmt-btn[data-cmd="underline"]').forEach(function(b){
+    b.classList.toggle('active', document.queryCommandState('underline'));
+  });
+  document.querySelectorAll('.fmt-btn[data-cmd="bullet"]').forEach(function(b){
+    b.classList.toggle('active', document.queryCommandState('insertUnorderedList'));
+  });
+}
+docEditor.addEventListener('mouseup', updateToolbarState);
+docEditor.addEventListener('keyup', updateToolbarState);
+
+// LOGIN
+document.getElementById('show-jade-btn').onclick=function(){
+  document.getElementById('client-panel').style.display='none';
+  document.getElementById('jade-panel').style.display='block';
+  document.getElementById('jade-pw').focus();
+};
+
+document.getElementById('show-client-btn').onclick=function(){
+  document.getElementById('jade-panel').style.display='none';
+  document.getElementById('client-panel').style.display='block';
+};
+
+document.getElementById('jade-btn').onclick=async function(){
+  const pw=document.getElementById('jade-pw').value;
+  if(pw===PASSWORD){
+    showScreen('setup-screen');
+    try{
+      await renderDashboard();
+    }catch(e){
+      console.error(e);
+      notif('Could not load saved reviews — check your connection.');
+    }
+  } else {
+    document.getElementById('jade-err').style.display='block';
+  }
+};
+
+document.getElementById('jade-pw').addEventListener('keydown',function(e){
+  if(e.key==='Enter') document.getElementById('jade-btn').click();
+});
+
+document.getElementById('client-btn').onclick=async function(){
+  const code=document.getElementById('client-code').value.trim().toUpperCase();
+  const errEl=document.getElementById('client-err');
+  errEl.style.display='none';
+  if(!code){ errEl.textContent='Please enter your review code.'; errEl.style.display='block'; return; }
+  const btn=document.getElementById('client-btn');
+  btn.disabled=true; btn.textContent='Loading…';
+  try{
+    const review=await getReview(code);
+    if(review){
+      await loadClientReview(code, review);
+    } else {
+      errEl.textContent='Code not found. Please check with BidElevate.';
+      errEl.style.display='block';
+    }
+  }catch(e){
+    console.error(e);
+    errEl.textContent='Could not load your review — please check your connection and try again.';
+    errEl.style.display='block';
+  }
+  btn.disabled=false; btn.textContent='Care provider sign in';
+};
+
+document.getElementById('client-code').addEventListener('keydown',function(e){
+  if(e.key==='Enter') document.getElementById('client-btn').click();
+});
+
+document.getElementById('signout-btn').onclick=function(){
+  document.getElementById('jade-pw').value='';
+  showScreen('login-screen');
+};
+
+// COLOUR PICKER
+document.querySelectorAll('.cdot').forEach(function(dot){
+  dot.onclick=function(){
+    document.querySelectorAll('.cdot').forEach(d=>d.classList.remove('sel'));
+    dot.classList.add('sel');
+    selectedColor=dot.dataset.color;
+  };
+});
+
+// ADD COMMENT
+// Wraps every text node touched by a range in its own <mark>, so highlighting works
+// reliably even when the selection sits inside bullets, bold/italic spans, etc.
+// (range.surroundContents() fails outright on those cases, which was the bug.)
+function wrapRangeInHighlight(range, className, commentId){
+  const marks = [];
+  const walker = document.createTreeWalker(
+    range.commonAncestorContainer.nodeType === 3 ? range.commonAncestorContainer.parentNode : range.commonAncestorContainer,
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+  const nodes = [];
+  let node;
+  while((node = walker.nextNode())){
+    if(range.intersectsNode(node)) nodes.push(node);
+  }
+  nodes.forEach(function(textNode, idx){
+    // Skip text nodes with no actual content (e.g. stray whitespace between elements)
+    if(!textNode.textContent || !textNode.textContent.trim()) return;
+    let start = (textNode === range.startContainer) ? range.startOffset : 0;
+    let end = (textNode === range.endContainer) ? range.endOffset : textNode.length;
+    if(start >= end) return;
+    const sub = document.createRange();
+    try{
+      sub.setStart(textNode, start);
+      sub.setEnd(textNode, end);
+      const mark = document.createElement('mark');
+      mark.className = className;
+      mark.dataset.commentId = commentId;
+      if(marks.length === 0) mark.id = 'hl-'+commentId;
+      sub.surroundContents(mark);
+      marks.push(mark);
+    }catch(e){
+      // This specific text node couldn't be wrapped (e.g. partial overlap with an
+      // existing element boundary) — skip it and continue with the rest of the selection
+      // rather than aborting the whole highlight.
+      console.warn('Skipped wrapping one fragment:', e.message);
+    }
+  });
+  return marks;
+}
+
+document.getElementById('add-comment-btn').onclick=function(){
+  const text=document.getElementById('new-comment').value.trim();
+  if(!text){notif('Please write a comment first.');return;}
+  const id='c'+Date.now();
+  let quoteText = '';
+
+  if(savedRange && !savedRange.collapsed){
+    try{
+      const marks = wrapRangeInHighlight(savedRange, 'hl-mark hl-'+selectedColor, id);
+      marks.forEach(function(m){ m.onclick = function(){ jumpToComment(id); }; });
+      quoteText = marks.map(function(m){ return m.textContent.trim(); }).filter(Boolean).join(' / ');
+    }catch(e){
+      console.warn('Could not wrap selection:', e);
+    }
+    savedRange = null;
+    document.getElementById('selection-hint').style.display = 'none';
+  }
+
+  comments.push({
+    id, text, color:selectedColor, quote:quoteText,
+    time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
+  });
+  document.getElementById('new-comment').value='';
+  renderComments();
+  notif('Comment added ✓');
+};
+
+function jumpToComment(id){
+  const el = document.getElementById('comment-card-'+id) || document.getElementById('client-comment-card-'+id);
+  if(el){
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.classList.add('flash-card');
+    setTimeout(()=>el.classList.remove('flash-card'), 900);
+  }
+  const hl = document.getElementById('hl-'+id);
+  if(hl){
+    hl.classList.add('flash');
+    setTimeout(()=>hl.classList.remove('flash'), 900);
+  }
+}
+
+function renderComments(){
+  const list=document.getElementById('comments-list');
+  document.getElementById('comment-pill').textContent=comments.length+(comments.length===1?' comment':' comments');
+  if(comments.length===0){
+    list.innerHTML='<div class="empty-state">💬<br><br>Add comments using the form below.<br>As many as you like — no limit.</div>';
+    return;
+  }
+  list.innerHTML=comments.map(function(c){
+    const col=COLORS[c.color];
+    const quoteHtml = c.quote ? '<div class="c-quote">"'+c.quote+'"</div>' : '';
+    return '<div class="comment-card" id="comment-card-'+c.id+'"><div class="c-accent" style="background:'+col.hex+';"></div><div class="c-inner"><div class="c-top"><span class="c-author">BidElevate · '+c.time+'</span><button class="del-btn" onclick="deleteComment(\''+c.id+'\')">✕</button></div>'+quoteHtml+'<div class="c-body">'+c.text+'</div></div></div>';
+  }).join('');
+}
+
+function deleteComment(id){
+  comments=comments.filter(function(c){return c.id!==id;});
+  document.querySelectorAll('mark[data-comment-id="'+id+'"]').forEach(function(hl){
+    const parent = hl.parentNode;
+    while(hl.firstChild) parent.insertBefore(hl.firstChild, hl);
+    parent.removeChild(hl);
+  });
+  renderComments();
+}
+
+// GENERATE LINK
+document.getElementById('gen-btn').onclick=async function(){
+  const clientName=document.getElementById('client-name').value.trim();
+  const tenderRef=document.getElementById('tender-ref').value.trim();
+  const reviewCode=document.getElementById('review-code').value.trim().toUpperCase();
+  const docHTML=document.getElementById('doc-editor').innerHTML.trim();
+
+  if(!clientName){notif('Please enter a client name.');return;}
+  if(!reviewCode){notif('Please enter a review code.');return;}
+  if(comments.length===0){notif('Please add at least one comment.');return;}
+  if(!docHTML){notif('Please paste the draft document.');return;}
+
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+
+  try{
+    await saveReview(reviewCode,{
+      clientName,tenderRef,reviewCode,docHTML,
+      docText: document.getElementById('doc-editor').innerText,
+      comments:JSON.parse(JSON.stringify(comments)),
+      replies:{},submitted:false
+    });
+  }catch(e){
+    console.error(e);
+    notif('Could not save — please check your connection and try again.');
+    btn.disabled=false; btn.textContent='Generate client link →';
+    return;
+  }
+
+  const link=window.location.href.split('?')[0]+'?review='+reviewCode;
+  document.getElementById('link-box').textContent=link;
+  document.getElementById('gen-section').style.display='none';
+  document.getElementById('link-section').style.display='block';
+  notif('Link generated! Code: '+reviewCode);
+
+  try{
+    await renderDashboard();
+  }catch(e){
+    console.error(e);
+  }
+};
+
+document.getElementById('copy-btn').onclick=function(){
+  const text=document.getElementById('link-box').textContent;
+  navigator.clipboard.writeText(text).then(function(){notif('Link copied ✓');});
+};
+
+// DASHBOARD
+async function renderDashboard(){
+  let all;
+  try{
+    all = await getReviews();
+  }catch(e){
+    console.error(e);
+    document.getElementById('dashboard').style.display='none';
+    return;
+  }
+  const submitted=all.filter(function(r){return r.submitted;});
+  const dash=document.getElementById('dashboard');
+  if(submitted.length===0){dash.style.display='none';return;}
+  dash.style.display='block';
+  dash.innerHTML='<div class="dashboard"><div class="dash-title">Completed reviews <span class="dash-badge">'+submitted.length+'</span></div>'+
+    submitted.map(function(r){
+      return '<div class="dash-item"><div class="dash-item-info"><div class="dash-item-name">'+r.clientName+'</div><div class="dash-item-meta">'+r.tenderRef+' · '+r.reviewCode+' · '+r.submittedAt+'</div></div><div style="display:flex;gap:6px;"><button class="dash-dl-btn" onclick="downloadByCode(\''+r.reviewCode+'\')">Download</button><button class="dash-dl-btn" style="background:#6b7280;" onclick="pdfRecordByCode(\''+r.reviewCode+'\')" title="Simplified PDF for Drive filing / NotebookLM">PDF for filing</button><button class="dash-dl-btn" style="background:#fff;color:#ef4444;border:1.5px solid #ef4444;" onclick="deleteReviewByCode(\''+r.reviewCode+'\',\''+r.clientName.replace(/'/g,"\\'")+'\')" title="Delete this review permanently">Delete</button></div></div>';
+    }).join('')+'</div>';
+}
+
+// CLIENT REVIEW
+async function loadClientReview(code, reviewData){
+  let review = reviewData;
+  if(!review){
+    try{
+      review = await getReview(code);
+    }catch(e){
+      console.error(e);
+      return;
+    }
+  }
+  if(!review)return;
+  currentReview=review;
+  replies={};
+  document.getElementById('client-title').textContent=review.clientName+' — '+review.tenderRef;
+  document.getElementById('client-meta').textContent='Sent by BidElevate · Please reply to every comment below';
+  const docEl = document.getElementById('client-doc');
+  docEl.innerHTML = review.docHTML || review.docText || '';
+  bindHighlightClicks(docEl);
+  renderClientComments(review);
+  showScreen('client-screen');
+  updateProgress(review);
+}
+
+function bindHighlightClicks(container){
+  container.querySelectorAll('.hl-mark').forEach(function(mark){
+    mark.onclick = function(){ jumpToComment(mark.dataset.commentId); };
+  });
+}
+
+function renderClientComments(review){
+  const list=document.getElementById('client-comments');
+  list.innerHTML=review.comments.map(function(c){
+    const col=COLORS[c.color];
+    const quoteHtml = c.quote ? '<div class="c-quote">"'+c.quote+'"</div>' : '';
+    return '<div class="client-c-card" id="client-comment-card-'+c.id+'"><div class="c-accent" style="background:'+col.hex+';"></div><div class="c-inner"><div class="req-row"><span class="c-author">BidElevate · '+c.time+'</span><span style="display:flex;align-items:center;gap:5px;"><span class="req-dot" id="dot-'+c.id+'"></span><span class="req-label" id="rl-'+c.id+'">Required</span></span></div>'+quoteHtml+'<div class="c-body" style="margin-bottom:6px;">'+c.text+'</div><textarea class="reply-area" id="reply-'+c.id+'" placeholder="Type your reply here…" oninput="onReply(\''+c.id+'\')" rows="3"></textarea></div></div>';
+  }).join('');
+}
+
+function onReply(id){
+  const val=document.getElementById('reply-'+id).value.trim();
+  const dot=document.getElementById('dot-'+id);
+  const rl=document.getElementById('rl-'+id);
+  const ta=document.getElementById('reply-'+id);
+  if(val){
+    replies[id]=val;
+    dot.classList.add('done');rl.textContent='Done';rl.classList.add('done');
+    ta.classList.add('filled');
+  } else {
+    delete replies[id];
+    dot.classList.remove('done');rl.textContent='Required';rl.classList.remove('done');
+    ta.classList.remove('filled');
+  }
+  updateProgress(currentReview);
+}
+
+function updateProgress(review){
+  const total=review.comments.length;
+  const done=Object.keys(replies).length;
+  const pct=total===0?0:Math.round((done/total)*100);
+  const allDone=done===total&&total>0;
+  document.getElementById('prog-text').textContent=done+' / '+total;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('client-pill').textContent=done+' of '+total+' replied';
+  document.getElementById('client-pill').className='pill '+(allDone?'pill-green':'pill-amber');
+  const btn=document.getElementById('submit-btn');
+  const hint=document.getElementById('submit-hint');
+  btn.disabled=!allDone;
+  btn.textContent=allDone?'Submit all replies →':'Reply to all comments to submit';
+  hint.textContent=allDone?'All done — tap to submit.':'You must reply to every comment before submitting.';
+  hint.style.color=allDone?'#3e554f':'var(--muted)';
+}
+
+document.getElementById('submit-btn').onclick=async function(){
+  const review=currentReview;
+  if(Object.keys(replies).length<review.comments.length){notif('Please reply to all comments first.');return;}
+  review.replies=Object.assign({},replies);
+  review.submitted=true;
+  review.submittedAt=new Date().toLocaleString('en-GB');
+
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='Submitting…';
+
+  try{
+    await saveReview(review.reviewCode,review);
+  }catch(e){
+    console.error(e);
+    notif('Could not submit — please check your connection and try again.');
+    review.submitted=false;
+    btn.disabled=false; btn.textContent='Submit all replies →';
+    return;
+  }
+
+  showScreen('success-screen');
+  sendNotificationEmail(review);
+};
+
+async function sendNotificationEmail(review){
+  if(!window.emailjs){return;}
+  var orgLabel = (review.clientName||'Client').toUpperCase();
+  var lines=review.comments.map(function(c,i){
+    var reply=(review.replies&&review.replies[c.id])||'(no reply)';
+    return 'Comment '+(i+1)+':\n'+c.text+'\n\n'+orgLabel+' reply:\n'+reply+'\n';
+  }).join('\n---\n\n');
+
+  var fullContent =
+    'DRAFT DOCUMENT\n' +
+    '='.repeat(40) + '\n\n' +
+    (review.docText || '(no draft text)') +
+    '\n\n' +
+    '='.repeat(40) + '\n' +
+    'COMMENTS & CLIENT REPLIES\n' +
+    '='.repeat(40) + '\n\n' +
+    lines;
+
+  // Link back into the portal's staff download view — handy backup/quick-reference when online.
+  var reviewLink = window.location.href.split('?')[0] + '?staffview=' + review.reviewCode;
+
+  // Build the same branded HTML record the client/dashboard download button generates,
+  // then base64-encode it so EmailJS can attach it as a real file (requires a paid
+  // EmailJS plan with Dynamic Attachments enabled on the template).
+  var attachmentBase64 = '';
+  try{
+    var recordHtml = buildDownload(review);
+    attachmentBase64 = btoa(unescape(encodeURIComponent(recordHtml)));
+  }catch(e){
+    console.error('Could not build HTML attachment:', e);
+  }
+
+  // Also generate a real PDF (silently, no print dialog) for the same record, simplified
+  // layout — this is the filing/NotebookLM-style PDF, attached as an actual .pdf file.
+  var attachmentPdfBase64 = '';
+  try{
+    attachmentPdfBase64 = await buildPdfBlob(review);
+  }catch(e){
+    console.error('Could not build PDF attachment — sending without it:', e);
+  }
+
+  var params={
+    client_name: review.clientName,
+    tender_ref: review.tenderRef,
+    review_code: review.reviewCode,
+    submitted_at: review.submittedAt,
+    comments_and_replies: fullContent,
+    review_link: reviewLink,
+    attachment: attachmentBase64,
+    attachment_pdf: attachmentPdfBase64
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
+    .then(function(){ console.log('Notification email sent'); })
+    .catch(function(err){ console.error('EmailJS error:', err); });
+}
+
+// DOWNLOAD
+function buildDownload(review){
+  var colors={amber:'#f59e0b',blue:'#3b82f6',pink:'#ec4899',teal:'#14b8a6',purple:'#8b5cf6',red:'#ef4444'};
+  var orgName = (review.clientName||'Client').toUpperCase();
+  var commentsHtml=review.comments.map(function(c,i){
+    var col=colors[c.color]||'#3e554f';
+    var reply=(review.replies&&review.replies[c.id])||'(no reply received)';
+    var quoteHtml = c.quote ? '<div style="font-size:13px;font-style:italic;color:#1a1a1a;background:rgba(0,0,0,0.04);border-left:3px solid '+col+';padding:6px 10px;margin-bottom:10px;border-radius:6px;">&ldquo;'+c.quote+'&rdquo;</div>' : '';
+    return [
+      '<div style="border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden;background:#fff;">',
+      '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+col+';"></div>',
+      '<div style="padding-left:8px;">',
+      '<div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Comment '+(i+1)+'</div>',
+      quoteHtml,
+      '<div style="font-size:13px;color:#1a1a1a;line-height:1.6;margin-bottom:10px;padding:8px 12px;background:#f9fafb;border-radius:8px;">'+c.text+'</div>',
+      '<div style="font-size:10px;font-weight:600;color:#3e554f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">'+orgName+' reply</div>',
+      '<div style="font-size:13px;color:#1a1a1a;line-height:1.6;padding:8px 12px;background:#eaf3ee;border-radius:8px;border-left:3px solid #3e554f;">'+reply+'</div>',
+      '</div></div>'
+    ].join('');
+  }).join('');
+
+  var metaCards=[
+    ['Organisation / company',review.clientName],
+    ['Tender reference',review.tenderRef],
+    ['Review code',review.reviewCode],
+    ['Submitted',review.submittedAt||'N/A']
+  ].map(function(m){
+    return '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;">'
+      +'<div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">'+m[0]+'</div>'
+      +'<div style="font-size:14px;font-weight:500;color:#1a1a1a;">'+m[1]+'</div></div>';
+  }).join('');
+
+  var sectionStyle='font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;';
+
+  var html=[
+    '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">',
+    '<meta name="viewport" content="width=device-width,initial-scale=1.0">',
+    '<title>BidElevate Review Record</title>',
+    '<style>',
+    '*{box-sizing:border-box;margin:0;padding:0;}',
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f9fafb;color:#1a1a1a;padding:24px;}',
+    '.wrap{max-width:1400px;margin:0 auto;}',
+    '.hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;border-radius:3px;padding:1px 2px;}',
+    '.hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px;}',
+    '.hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px;}',
+    '.hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;border-radius:3px;padding:1px 2px;}',
+    '.hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;border-radius:3px;padding:1px 2px;}',
+    '.hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;border-radius:3px;padding:1px 2px;}',
+    '.split{display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;}',
+    '@media(max-width:900px){.split{grid-template-columns:1fr;}}',
+    '.draft-pane{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;}',
+    '.draft-pane h2{font-size:17px;font-weight:700;color:#3e554f;margin:14px 0 6px;}',
+    '.draft-pane ul{margin:8px 0 8px 20px;padding:0;}',
+    '.draft-pane li{margin-bottom:4px;}',
+    '.comments-pane{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;padding-right:4px;}',
+    '@media print{body{background:#fff;padding:20px;}.comments-pane{position:static;max-height:none;overflow:visible;}.split{grid-template-columns:1fr;}}',
+    '</style></head><body><div class="wrap">',
+    '<div style="background:#3e554f;border-radius:16px;padding:28px 32px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">',
+    '<div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.3px;">BidElevate</div>',
+    '<div style="text-align:right;">',
+    '<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:2px;">Draft Review Record</div>',
+    '<div style="font-size:13px;color:rgba(255,255,255,0.7);">Completed '+( (review.submittedAt||'N/A'))+'</div>',
+    '</div></div>',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">'+metaCards+'</div>',
+    '<div class="split">',
+    '<div>',
+    '<div style="'+sectionStyle+'">Draft document</div>',
+    '<div class="draft-pane">'+( (review.docHTML||review.docText||''))+'</div>',
+    '</div>',
+    '<div class="comments-pane">',
+    '<div style="'+sectionStyle+'">Comments &amp; client replies</div>',
+    commentsHtml,
+    '</div>',
+    '</div>',
+    '<div style="margin-top:24px;text-align:center;font-size:12px;color:#6b7280;padding-top:20px;border-top:1px solid #e5e7eb;">',
+    'Generated by BidElevate Draft Review Portal &nbsp;&middot;&nbsp; bidelevate.co.uk',
+    '</div></div></body></html>'
+  ].join('');
+
+  return html;
+}
+
+function triggerDownload(review){
+  var text=buildDownload(review);
+  var blob=new Blob([text],{type:'text/html;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='BidElevate-Review-'+review.reviewCode+'.html';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  notif('Downloaded \u2713');
+}
+
+// PDF RECORD (for Drive filing / NotebookLM — simple stacked layout, no side-by-side,
+// since PDFs are static pages and can't do the sticky-scroll comments panel.)
+function buildPdfRecord(review){
+  var colors={amber:'#f59e0b',blue:'#3b82f6',pink:'#ec4899',teal:'#14b8a6',purple:'#8b5cf6',red:'#ef4444'};
+  var orgName = (review.clientName||'Client').toUpperCase();
+  var commentsHtml=review.comments.map(function(c,i){
+    var col=colors[c.color]||'#3e554f';
+    var reply=(review.replies&&review.replies[c.id])||'(no reply received)';
+    var quoteHtml = c.quote ? '<div style="font-size:12px;font-style:italic;color:#1a1a1a;background:rgba(0,0,0,0.04);border-left:3px solid '+col+';padding:5px 9px;margin-bottom:8px;border-radius:5px;">&ldquo;'+c.quote+'&rdquo;</div>' : '';
+    return [
+      '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px;position:relative;overflow:hidden;background:#fff;page-break-inside:avoid;">',
+      '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+col+';"></div>',
+      '<div style="padding-left:8px;">',
+      '<div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Comment '+(i+1)+'</div>',
+      quoteHtml,
+      '<div style="font-size:12px;color:#1a1a1a;line-height:1.5;margin-bottom:8px;padding:7px 10px;background:#f9fafb;border-radius:7px;">'+c.text+'</div>',
+      '<div style="font-size:9px;font-weight:600;color:#3e554f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">'+orgName+' reply</div>',
+      '<div style="font-size:12px;color:#1a1a1a;line-height:1.5;padding:7px 10px;background:#eaf3ee;border-radius:7px;border-left:3px solid #3e554f;">'+reply+'</div>',
+      '</div></div>'
+    ].join('');
+  }).join('');
+
+  var metaCards=[
+    ['Organisation / company',review.clientName],
+    ['Tender reference',review.tenderRef],
+    ['Review code',review.reviewCode],
+    ['Submitted',review.submittedAt||'N/A']
+  ].map(function(m){
+    return '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;">'
+      +'<div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">'+m[0]+'</div>'
+      +'<div style="font-size:13px;font-weight:500;color:#1a1a1a;">'+m[1]+'</div></div>';
+  }).join('');
+
+  var sectionStyle='font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb;';
+
+  return [
+    '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">',
+    '<title>BidElevate Review Record — '+review.reviewCode+'</title>',
+    '<style>',
+    '*{box-sizing:border-box;margin:0;padding:0;}',
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff;color:#1a1a1a;padding:28px;}',
+    '.wrap{max-width:760px;margin:0 auto;}',
+    '.hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;border-radius:3px;padding:1px 2px;}',
+    '.hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px;}',
+    '.hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px;}',
+    '.hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;border-radius:3px;padding:1px 2px;}',
+    '.hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;border-radius:3px;padding:1px 2px;}',
+    '.hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;border-radius:3px;padding:1px 2px;}',
+    '.draft-pane{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:18px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:24px;}',
+    '.draft-pane h2{font-size:15px;font-weight:700;color:#3e554f;margin:12px 0 5px;}',
+    '.draft-pane ul{margin:6px 0 6px 18px;padding:0;}',
+    '.draft-pane li{margin-bottom:3px;}',
+    '@media print{ body{padding:12px;} }',
+    '</style></head><body><div class="wrap">',
+    '<div style="background:#3e554f;border-radius:12px;padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">',
+    '<div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;">BidElevate</div>',
+    '<div style="text-align:right;">',
+    '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">Draft Review Record</div>',
+    '<div style="font-size:11px;color:rgba(255,255,255,0.7);">Completed '+( (review.submittedAt||'N/A'))+'</div>',
+    '</div></div>',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">'+metaCards+'</div>',
+    '<div style="'+sectionStyle+'">Draft document</div>',
+    '<div class="draft-pane">'+( (review.docHTML||review.docText||''))+'</div>',
+    '<div style="'+sectionStyle+'">Comments &amp; client replies</div>',
+    commentsHtml,
+    '<div style="margin-top:18px;text-align:center;font-size:11px;color:#6b7280;padding-top:14px;border-top:1px solid #e5e7eb;">',
+    'Generated by BidElevate Draft Review Portal &nbsp;&middot;&nbsp; bidelevate.co.uk',
+    '</div></div>',
+    '<scr'+'ipt>window.onload=function(){ setTimeout(function(){ window.print(); }, 300); };</scr'+'ipt>',
+    '</body></html>'
+  ].join('');
+}
+
+function triggerPdfRecord(review){
+  var html = buildPdfRecord(review);
+  var win = window.open('', '_blank');
+  if(!win){ notif('Please allow pop-ups to create the PDF.'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+// Generates an actual PDF file in memory (base64-encoded) from the same simplified
+// record used for Drive filing — but silently, with no print dialog and no user
+// interaction. Used to attach a real .pdf to the notification email.
+//
+// Renders the content directly in the live page (hidden off-screen) rather than
+// inside a separate iframe document — capturing across a separate document context
+// was causing the cropped/shifted output seen in testing. Resolves with a base64
+// string, or rejects if PDF generation fails for any reason.
 function buildPdfBlob(review){
   return new Promise(function(resolve, reject){
     if(!window.html2pdf){ reject(new Error('html2pdf library not loaded')); return; }
@@ -7,11 +1090,13 @@ function buildPdfBlob(review){
     var parsedDoc = parser.parseFromString(fullHtml, 'text/html');
     var wrapEl = parsedDoc.querySelector('.wrap');
     if(!wrapEl){ reject(new Error('Could not parse PDF record content')); return; }
-    wrapEl = document.adoptNode(wrapEl);
+    document.adoptNode(wrapEl);
 
     // Scoped styles matching buildPdfRecord's own <style> block — kept under a
     // single class so they can't leak onto the rest of the live page, and removed
-    // again once the capture is done.
+    // again once the capture is done. (The page's own global box-sizing/margin
+    // reset at the top of index.html already applies to everything, including
+    // this container, so it doesn't need repeating here.)
     var tempStyle = document.createElement('style');
     tempStyle.id = 'pdf-blob-temp-style';
     tempStyle.textContent =
@@ -32,12 +1117,11 @@ function buildPdfBlob(review){
     var container = document.createElement('div');
     container.className = 'pdf-blob-capture';
     container.style.position = 'fixed';
-    // FIX: html2canvas frequently renders opacity:0 elements as a blank/transparent
-    // capture. Hiding via off-screen positioning instead keeps the element fully
-    // "visible" to the renderer while staying invisible to the actual user.
-    container.style.left = '-9999px';
+    container.style.left = '0';
     container.style.top = '0';
     container.style.width = '816px'; // 760px content + 28px padding on each side
+    container.style.zIndex = '-1';
+    container.style.opacity = '0';
     container.style.pointerEvents = 'none';
     container.appendChild(wrapEl);
     document.body.appendChild(container);
@@ -72,3 +1156,87 @@ function buildPdfBlob(review){
     }, 50);
   });
 }
+
+document.getElementById('client-dl-btn').onclick=function(){
+  if(currentReview) triggerDownload(currentReview);
+};
+
+async function downloadByCode(code){
+  try{
+    const review=await getReview(code);
+    if(review) triggerDownload(review);
+  }catch(e){
+    console.error(e);
+    notif('Could not load that review — please check your connection.');
+  }
+}
+
+async function pdfRecordByCode(code){
+  try{
+    const review=await getReview(code);
+    if(review) triggerPdfRecord(review);
+  }catch(e){
+    console.error(e);
+    notif('Could not load that review — please check your connection.');
+  }
+}
+
+async function deleteReviewByCode(code, clientName){
+  const ok = window.confirm('Permanently delete the review for "'+clientName+'" (code '+code+')?\n\nThis cannot be undone — make sure you\'ve already downloaded any copy you need first.');
+  if(!ok) return;
+  try{
+    await deleteReview(code);
+    notif('Deleted ✓');
+    await renderDashboard();
+  }catch(e){
+    console.error(e);
+    notif('Could not delete — please check your connection and try again.');
+  }
+}
+
+// URL PARAM
+(async function initFromUrlParams(){
+  const urlParams=new URLSearchParams(window.location.search);
+  const rp=urlParams.get('review');
+  const sv=urlParams.get('staffview');
+
+  if(sv){
+    let rvStaff=null;
+    try{
+      rvStaff=await getReview(sv.toUpperCase());
+    }catch(e){
+      console.error(e);
+    }
+    if(rvStaff){
+      showScreen('setup-screen');
+      document.querySelector('.setup-layout').style.display='none';
+      const banner=document.createElement('div');
+      banner.style.cssText='max-width:480px;margin:60px auto;padding:32px;background:#fff;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);';
+      banner.innerHTML='<div style="font-size:40px;margin-bottom:12px;">📄</div>'+
+        '<div style="font-size:18px;font-weight:700;color:#3e554f;margin-bottom:6px;">'+rvStaff.clientName+' — '+rvStaff.tenderRef+'</div>'+
+        '<div style="font-size:13px;color:#6b7280;margin-bottom:20px;">Review code '+rvStaff.reviewCode+' · Submitted '+(rvStaff.submittedAt||'')+'</div>'+
+        '<button id="staff-dl-btn" style="width:100%;padding:14px;background:#3e554f;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Download full record</button>';
+      document.getElementById('setup-screen').appendChild(banner);
+      document.getElementById('staff-dl-btn').onclick=function(){ triggerDownload(rvStaff); };
+    } else {
+      showScreen('login-screen');
+    }
+  } else if(rp){
+    let rv=null;
+    try{
+      rv=await getReview(rp.toUpperCase());
+    }catch(e){
+      console.error(e);
+    }
+    if(rv){
+      await loadClientReview(rp.toUpperCase(), rv);
+    } else {
+      document.getElementById('client-code').value=rp.toUpperCase();
+      document.getElementById('client-err').textContent='Code not found. Please check with BidElevate.';
+      document.getElementById('client-err').style.display='block';
+    }
+  }
+})();
+</script>
+</body>
+</html>
