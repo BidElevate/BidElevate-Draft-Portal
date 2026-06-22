@@ -161,6 +161,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .COLORS{}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -839,7 +840,7 @@ document.getElementById('submit-btn').onclick=async function(){
   sendNotificationEmail(review);
 };
 
-function sendNotificationEmail(review){
+async function sendNotificationEmail(review){
   if(!window.emailjs){return;}
   var orgLabel = (review.clientName||'Client').toUpperCase();
   var lines=review.comments.map(function(c,i){
@@ -868,7 +869,16 @@ function sendNotificationEmail(review){
     var recordHtml = buildDownload(review);
     attachmentBase64 = btoa(unescape(encodeURIComponent(recordHtml)));
   }catch(e){
-    console.error('Could not build attachment:', e);
+    console.error('Could not build HTML attachment:', e);
+  }
+
+  // Also generate a real PDF (silently, no print dialog) for the same record, simplified
+  // layout — this is the filing/NotebookLM-style PDF, attached as an actual .pdf file.
+  var attachmentPdfBase64 = '';
+  try{
+    attachmentPdfBase64 = await buildPdfBlob(review);
+  }catch(e){
+    console.error('Could not build PDF attachment — sending without it:', e);
   }
 
   var params={
@@ -878,7 +888,8 @@ function sendNotificationEmail(review){
     submitted_at: review.submittedAt,
     comments_and_replies: fullContent,
     review_link: reviewLink,
-    attachment: attachmentBase64
+    attachment: attachmentBase64,
+    attachment_pdf: attachmentPdfBase64
   };
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
@@ -1060,6 +1071,63 @@ function triggerPdfRecord(review){
   win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+// Generates an actual PDF file in memory (base64-encoded) from the same simplified
+// record used for Drive filing — but silently, in a hidden iframe, with no print
+// dialog and no user interaction. Used to attach a real .pdf to the notification email.
+// Resolves with a base64 string, or rejects if PDF generation fails for any reason.
+function buildPdfBlob(review){
+  return new Promise(function(resolve, reject){
+    if(!window.html2pdf){ reject(new Error('html2pdf library not loaded')); return; }
+
+    var html = buildPdfRecord(review);
+    // Strip the auto window.print() trigger — we only want the static document here.
+    html = html.replace(/<script>window\.onload[\s\S]*?<\/script>/, '');
+
+    var iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '0';
+    iframe.style.width = '800px';
+    iframe.style.height = '1200px';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    var cleanup = function(){
+      if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    };
+
+    iframe.onload = function(){
+      // Give layout a moment to settle before capturing.
+      setTimeout(function(){
+        try{
+          var body = iframe.contentDocument.body;
+          html2pdf().set({
+            margin: 0,
+            filename: 'BidElevate-Review-'+review.reviewCode+'.pdf',
+            html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
+            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+          }).from(body).outputPdf('blob').then(function(blob){
+            var reader = new FileReader();
+            reader.onloadend = function(){
+              var base64 = String(reader.result).split(',')[1] || '';
+              cleanup();
+              resolve(base64);
+            };
+            reader.onerror = function(){ cleanup(); reject(new Error('Could not read PDF blob')); };
+            reader.readAsDataURL(blob);
+          }).catch(function(err){ cleanup(); reject(err); });
+        }catch(e){
+          cleanup();
+          reject(e);
+        }
+      }, 300);
+    };
+
+    iframe.srcdoc = html;
+  });
 }
 
 document.getElementById('client-dl-btn').onclick=function(){
