@@ -1074,59 +1074,86 @@ function triggerPdfRecord(review){
 }
 
 // Generates an actual PDF file in memory (base64-encoded) from the same simplified
-// record used for Drive filing — but silently, in a hidden iframe, with no print
-// dialog and no user interaction. Used to attach a real .pdf to the notification email.
-// Resolves with a base64 string, or rejects if PDF generation fails for any reason.
+// record used for Drive filing — but silently, with no print dialog and no user
+// interaction. Used to attach a real .pdf to the notification email.
+//
+// Renders the content directly in the live page (hidden off-screen) rather than
+// inside a separate iframe document — capturing across a separate document context
+// was causing the cropped/shifted output seen in testing. Resolves with a base64
+// string, or rejects if PDF generation fails for any reason.
 function buildPdfBlob(review){
   return new Promise(function(resolve, reject){
     if(!window.html2pdf){ reject(new Error('html2pdf library not loaded')); return; }
 
-    var html = buildPdfRecord(review);
-    // Strip the auto window.print() trigger — we only want the static document here.
-    html = html.replace(/<script>window\.onload[\s\S]*?<\/script>/, '');
+    var fullHtml = buildPdfRecord(review);
+    var parser = new DOMParser();
+    var parsedDoc = parser.parseFromString(fullHtml, 'text/html');
+    var wrapEl = parsedDoc.querySelector('.wrap');
+    if(!wrapEl){ reject(new Error('Could not parse PDF record content')); return; }
+    document.adoptNode(wrapEl);
 
-    var iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px';
-    iframe.style.top = '0';
-    iframe.style.width = '800px';
-    iframe.style.height = '1200px';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
+    // Scoped styles matching buildPdfRecord's own <style> block — kept under a
+    // single class so they can't leak onto the rest of the live page, and removed
+    // again once the capture is done. (The page's own global box-sizing/margin
+    // reset at the top of index.html already applies to everything, including
+    // this container, so it doesn't need repeating here.)
+    var tempStyle = document.createElement('style');
+    tempStyle.id = 'pdf-blob-temp-style';
+    tempStyle.textContent =
+      '.pdf-blob-capture{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff;color:#1a1a1a;}' +
+      '.pdf-blob-capture .wrap{width:760px;margin:0;padding:28px;}' +
+      '.pdf-blob-capture .draft-pane{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:18px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:24px;}' +
+      '.pdf-blob-capture .draft-pane h2{font-size:15px;font-weight:700;color:#3e554f;margin:12px 0 5px;}' +
+      '.pdf-blob-capture .draft-pane ul{margin:6px 0 6px 18px;padding:0;}' +
+      '.pdf-blob-capture .draft-pane li{margin-bottom:3px;}' +
+      '.pdf-blob-capture .hl-amber{background:#fef3c7;border-bottom:2px solid #f59e0b;border-radius:3px;padding:1px 2px;}' +
+      '.pdf-blob-capture .hl-blue{background:#dbeafe;border-bottom:2px solid #3b82f6;border-radius:3px;padding:1px 2px;}' +
+      '.pdf-blob-capture .hl-pink{background:#fce7f3;border-bottom:2px solid #ec4899;border-radius:3px;padding:1px 2px;}' +
+      '.pdf-blob-capture .hl-teal{background:#ccfbf1;border-bottom:2px solid #14b8a6;border-radius:3px;padding:1px 2px;}' +
+      '.pdf-blob-capture .hl-purple{background:#ede9fe;border-bottom:2px solid #8b5cf6;border-radius:3px;padding:1px 2px;}' +
+      '.pdf-blob-capture .hl-red{background:#fee2e2;border-bottom:2px solid #ef4444;border-radius:3px;padding:1px 2px;}';
+    document.head.appendChild(tempStyle);
+
+    var container = document.createElement('div');
+    container.className = 'pdf-blob-capture';
+    container.style.position = 'fixed';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.width = '816px'; // 760px content + 28px padding on each side
+    container.style.zIndex = '-1';
+    container.style.opacity = '0';
+    container.style.pointerEvents = 'none';
+    container.appendChild(wrapEl);
+    document.body.appendChild(container);
 
     var cleanup = function(){
-      if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      if(container.parentNode) container.parentNode.removeChild(container);
+      if(tempStyle.parentNode) tempStyle.parentNode.removeChild(tempStyle);
     };
 
-    iframe.onload = function(){
-      // Give layout a moment to settle before capturing.
-      setTimeout(function(){
-        try{
-          var body = iframe.contentDocument.body;
-          html2pdf().set({
-            margin: 0,
-            filename: 'BidElevate-Review-'+review.reviewCode+'.pdf',
-            html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
-            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
-          }).from(body).outputPdf('blob').then(function(blob){
-            var reader = new FileReader();
-            reader.onloadend = function(){
-              var base64 = String(reader.result).split(',')[1] || '';
-              cleanup();
-              resolve(base64);
-            };
-            reader.onerror = function(){ cleanup(); reject(new Error('Could not read PDF blob')); };
-            reader.readAsDataURL(blob);
-          }).catch(function(err){ cleanup(); reject(err); });
-        }catch(e){
-          cleanup();
-          reject(e);
-        }
-      }, 300);
-    };
-
-    iframe.srcdoc = html;
+    setTimeout(function(){
+      try{
+        html2pdf().set({
+          margin: 0,
+          filename: 'BidElevate-Review-'+review.reviewCode+'.pdf',
+          html2canvas: { scale: 2, useCORS: true, windowWidth: 816 },
+          jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        }).from(container).outputPdf('blob').then(function(blob){
+          var reader = new FileReader();
+          reader.onloadend = function(){
+            var base64 = String(reader.result).split(',')[1] || '';
+            cleanup();
+            resolve(base64);
+          };
+          reader.onerror = function(){ cleanup(); reject(new Error('Could not read PDF blob')); };
+          reader.readAsDataURL(blob);
+        }).catch(function(err){ cleanup(); reject(err); });
+      }catch(e){
+        cleanup();
+        reject(e);
+      }
+    }, 50);
   });
 }
 
