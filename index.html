@@ -233,6 +233,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span id="selection-hint" style="display:none;font-size:11px;color:#3e554f;font-weight:600;">✓ Text selected — add your comment below</span>
       </div>
       <div class="fmt-toolbar" id="fmt-toolbar">
+        <button type="button" class="fmt-btn" data-cmd="undo" title="Undo (Ctrl+Z)">&#8617;</button>
+        <button type="button" class="fmt-btn" data-cmd="redo" title="Redo (Ctrl+Y)">&#8618;</button>
+        <span class="fmt-divider"></span>
         <button type="button" class="fmt-btn" data-cmd="bold" title="Bold"><b>B</b></button>
         <button type="button" class="fmt-btn" data-cmd="italic" title="Italic"><i>I</i></button>
         <button type="button" class="fmt-btn" data-cmd="underline" title="Underline"><u>U</u></button>
@@ -509,7 +512,9 @@ document.querySelectorAll('.fmt-btn').forEach(function(btn){
   btn.addEventListener('click', function(){
     docEditor.focus();
     var cmd = btn.dataset.cmd;
-    if(cmd === 'bold'){ document.execCommand('bold'); }
+    if(cmd === 'undo'){ document.execCommand('undo'); }
+    else if(cmd === 'redo'){ document.execCommand('redo'); }
+    else if(cmd === 'bold'){ document.execCommand('bold'); }
     else if(cmd === 'italic'){ document.execCommand('italic'); }
     else if(cmd === 'underline'){ document.execCommand('underline'); }
     else if(cmd === 'bullet'){ document.execCommand('insertUnorderedList'); }
