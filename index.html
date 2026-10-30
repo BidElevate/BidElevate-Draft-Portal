@@ -464,46 +464,15 @@ docEditor.addEventListener('mouseup', trackSelection);
 docEditor.addEventListener('keyup', trackSelection);
 docEditor.addEventListener('touchend', trackSelection);
 
-// PASTE HANDLER — strips fixed column widths from Word tables so they fill the editor
-docEditor.addEventListener('paste', function(e){
-  var html = e.clipboardData && e.clipboardData.getData('text/html');
-  if(!html) return; // no HTML in clipboard — let browser handle plain text
-  var hasTables = /<table/i.test(html);
-  if(!hasTables) return; // no tables — let browser handle normally
-  e.preventDefault();
-  var tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  // Strip fixed widths from every table element
-  tmp.querySelectorAll('table').forEach(function(t){
-    t.removeAttribute('width');
-    t.removeAttribute('style');
-    t.style.width = '100%';
-    t.style.borderCollapse = 'collapse';
-    t.style.tableLayout = 'fixed';
-  });
-  tmp.querySelectorAll('td,th').forEach(function(cell){
-    var bg = cell.style.backgroundColor || cell.style.background;
-    cell.removeAttribute('width');
-    var oldStyle = cell.getAttribute('style') || '';
-    cell.removeAttribute('style');
-    // Preserve background shading (e.g. grey question boxes from Word)
-    if(bg) cell.style.backgroundColor = bg;
-  });
-  // colgroup/col set fixed column widths in Word — remove them
-  tmp.querySelectorAll('col,colgroup').forEach(function(col){ col.remove(); });
-  // Remove Word-specific namespace tags that clutter the editor
-  tmp.querySelectorAll('o\\:p,w\\:*').forEach(function(el){ el.remove(); });
-  document.execCommand('insertHTML', false, tmp.innerHTML);
-  // After insert, force all tables in editor to 100% width
-  docEditor.querySelectorAll('table').forEach(function(t){
-    t.style.width = '100%';
-    t.style.tableLayout = 'fixed';
-    t.style.borderCollapse = 'collapse';
-  });
-  docEditor.querySelectorAll('td,th').forEach(function(cell){
-    cell.style.removeProperty('width');
-    cell.style.removeProperty('min-width');
-  });
+// PASTE HANDLER — let browser paste normally, then clean up table widths
+docEditor.addEventListener('paste', function(){
+  setTimeout(function(){
+    // Remove colgroup/col which lock column widths (CSS can't delete elements)
+    docEditor.querySelectorAll('col,colgroup').forEach(function(el){ el.remove(); });
+    // Remove HTML width attributes (CSS !important handles the rest)
+    docEditor.querySelectorAll('table').forEach(function(t){ t.removeAttribute('width'); });
+    docEditor.querySelectorAll('td,th').forEach(function(cell){ cell.removeAttribute('width'); });
+  }, 0);
 });
 
 // FORMATTING TOOLBAR
