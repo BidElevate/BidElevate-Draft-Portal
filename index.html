@@ -279,6 +279,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div class="link-box" id="link-box"></div>
           <button class="copy-btn" id="copy-btn">Copy link</button>
         </div>
+        <div id="edit-loader" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;display:none;">
+          <div class="col-label" style="margin-bottom:6px;">Review code to load</div>
+          <div style="display:flex;gap:6px;">
+            <input class="field-input" id="edit-code-input" placeholder="e.g. ORGNAME-001" style="font-family:monospace;font-size:13px;flex:1;" autocapitalize="characters">
+            <button class="gen-btn" id="load-edit-btn" style="width:auto;padding:10px 16px;font-size:13px;white-space:nowrap;flex-shrink:0;">Load →</button>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:10px;">
+          <button id="toggle-edit-btn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">✏️ Edit an existing review</button>
+          <button id="new-review-btn" style="display:none;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;margin-left:12px;">✕ Start new review</button>
+        </div>
       </div>
 
       <div id="dashboard" style="display:none;"></div>
@@ -341,6 +352,10 @@ let selectedColor = 'amber';
 let replies = {};
 let currentReview = null;
 let savedRange = null;
+let editingCode = null;
+let _editingReplies = {};
+let _editingSubmitted = false;
+let _editingSubmittedAt = null;
 
 // --- Storage layer: Supabase REST (draft_reviews table) ---
 // Replaces the old localStorage-based storage. localStorage only ever lived in
@@ -717,20 +732,27 @@ document.getElementById('gen-btn').onclick=async function(){
       clientName,tenderRef,reviewCode,docHTML,
       docText: document.getElementById('doc-editor').innerText,
       comments:JSON.parse(JSON.stringify(comments)),
-      replies:{},submitted:false
+      replies: editingCode ? _editingReplies : {},
+      submitted: editingCode ? _editingSubmitted : false,
+      submittedAt: editingCode ? _editingSubmittedAt : null
     });
   }catch(e){
     console.error(e);
     notif('Could not save — please check your connection and try again.');
-    btn.disabled=false; btn.textContent='Generate client link →';
+    btn.disabled=false; btn.textContent= editingCode ? 'Save changes →' : 'Generate client link →';
     return;
   }
 
-  const link=window.location.href.split('?')[0]+'?review='+reviewCode;
-  document.getElementById('link-box').textContent=link;
-  document.getElementById('gen-section').style.display='none';
-  document.getElementById('link-section').style.display='block';
-  notif('Link generated! Code: '+reviewCode);
+  if(editingCode){
+    notif('Review updated ✓ Client link is unchanged.');
+    btn.disabled=false; btn.textContent='Save changes →';
+  } else {
+    const link=window.location.href.split('?')[0]+'?review='+reviewCode;
+    document.getElementById('link-box').textContent=link;
+    document.getElementById('gen-section').style.display='none';
+    document.getElementById('link-section').style.display='block';
+    notif('Link generated! Code: '+reviewCode);
+  }
 
   try{
     await renderDashboard();
@@ -743,6 +765,80 @@ document.getElementById('copy-btn').onclick=function(){
   const text=document.getElementById('link-box').textContent;
   navigator.clipboard.writeText(text).then(function(){notif('Link copied ✓');});
 };
+
+// EDIT EXISTING REVIEW
+document.getElementById('toggle-edit-btn').onclick=function(){
+  const el=document.getElementById('edit-loader');
+  const showing=el.style.display!=='none';
+  el.style.display=showing?'none':'block';
+  if(!showing) document.getElementById('edit-code-input').focus();
+};
+
+document.getElementById('new-review-btn').onclick=function(){
+  // Reset everything back to a blank new review
+  editingCode=null; _editingReplies={}; _editingSubmitted=false; _editingSubmittedAt=null;
+  document.getElementById('client-name').value='';
+  document.getElementById('tender-ref').value='';
+  document.getElementById('review-code').value='';
+  document.getElementById('doc-editor').innerHTML='';
+  comments=[];
+  renderComments();
+  document.getElementById('gen-btn').textContent='Generate client link →';
+  document.getElementById('gen-section').style.display='block';
+  document.getElementById('link-section').style.display='none';
+  document.getElementById('edit-loader').style.display='none';
+  document.getElementById('toggle-edit-btn').style.display='inline';
+  document.getElementById('new-review-btn').style.display='none';
+  notif('Ready for a new review.');
+};
+
+document.getElementById('load-edit-btn').onclick=async function(){
+  const code=document.getElementById('edit-code-input').value.trim().toUpperCase();
+  if(!code){notif('Please enter a review code.');return;}
+  const btn=document.getElementById('load-edit-btn');
+  btn.disabled=true; btn.textContent='Loading…';
+  try{
+    const review=await getReview(code);
+    if(!review){
+      notif('Review not found — check the code.');
+      btn.disabled=false; btn.textContent='Load →';
+      return;
+    }
+    // Populate all fields
+    document.getElementById('client-name').value=review.clientName||'';
+    document.getElementById('tender-ref').value=review.tenderRef||'';
+    document.getElementById('review-code').value=review.reviewCode||code;
+    document.getElementById('doc-editor').innerHTML=review.docHTML||review.docText||'';
+    // Rebuild comments in memory and sidebar
+    comments=JSON.parse(JSON.stringify(review.comments||[]));
+    renderComments();
+    // Re-bind click handlers on any existing highlights in the loaded doc HTML
+    document.querySelectorAll('#doc-editor .hl-mark').forEach(function(mark){
+      mark.onclick=function(){jumpToComment(mark.dataset.commentId);};
+    });
+    // Preserve the client's existing replies and submission status
+    _editingReplies=review.replies||{};
+    _editingSubmitted=review.submitted||false;
+    _editingSubmittedAt=review.submittedAt||null;
+    editingCode=code;
+    // Switch UI to edit mode
+    document.getElementById('gen-btn').textContent='Save changes →';
+    document.getElementById('gen-section').style.display='block';
+    document.getElementById('link-section').style.display='none';
+    document.getElementById('edit-loader').style.display='none';
+    document.getElementById('toggle-edit-btn').style.display='none';
+    document.getElementById('new-review-btn').style.display='inline';
+    notif('Loaded '+code+' — make your changes and click Save changes.');
+  }catch(e){
+    console.error(e);
+    notif('Could not load review — check your connection.');
+  }
+  btn.disabled=false; btn.textContent='Load →';
+};
+
+document.getElementById('edit-code-input').addEventListener('keydown',function(e){
+  if(e.key==='Enter') document.getElementById('load-edit-btn').click();
+});
 
 // DASHBOARD
 async function renderDashboard(){
