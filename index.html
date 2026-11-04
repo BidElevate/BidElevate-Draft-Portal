@@ -953,8 +953,15 @@ document.getElementById('submit-btn').onclick=async function(){
     return;
   }
 
+  // Send notification email BEFORE showing success screen — if the client
+  // closes the tab the moment they see "submitted", the email is already gone.
+  try{
+    await sendNotificationEmail(review);
+  }catch(e){
+    console.error('Email notification failed (review still saved):', e);
+  }
+
   showScreen('success-screen');
-  sendNotificationEmail(review);
 };
 
 async function sendNotificationEmail(review){
@@ -965,53 +972,18 @@ async function sendNotificationEmail(review){
     return 'Comment '+(i+1)+':\n'+c.text+'\n\n'+orgLabel+' reply:\n'+reply+'\n';
   }).join('\n---\n\n');
 
-  var fullContent =
-    'DRAFT DOCUMENT\n' +
-    '='.repeat(40) + '\n\n' +
-    (review.docText || '(no draft text)') +
-    '\n\n' +
-    '='.repeat(40) + '\n' +
-    'COMMENTS & CLIENT REPLIES\n' +
-    '='.repeat(40) + '\n\n' +
-    lines;
-
-  // Link back into the portal's staff download view — handy backup/quick-reference when online.
-  var reviewLink = window.location.href.split('?')[0] + '?staffview=' + review.reviewCode;
-
-  // Build the same branded HTML record the client/dashboard download button generates,
-  // then base64-encode it so EmailJS can attach it as a real file (requires a paid
-  // EmailJS plan with Dynamic Attachments enabled on the template).
-  var attachmentBase64 = '';
-  try{
-    var recordHtml = buildDownload(review);
-    attachmentBase64 = btoa(unescape(encodeURIComponent(recordHtml)));
-  }catch(e){
-    console.error('Could not build HTML attachment:', e);
-  }
-
-  // Also generate a real PDF (silently, no print dialog) for the same record, simplified
-  // layout — this is the filing/NotebookLM-style PDF, attached as an actual .pdf file.
-  var attachmentPdfBase64 = '';
-  try{
-    attachmentPdfBase64 = await buildPdfBlob(review);
-  }catch(e){
-    console.error('Could not build PDF attachment — sending without it:', e);
-  }
-
+  // Keep email payload small and fast — no PDF/HTML attachments (they were
+  // causing the send to be killed when clients closed the tab after submit).
+  // Full download is always available from the staff dashboard.
   var params={
     client_name: review.clientName,
     tender_ref: review.tenderRef,
     review_code: review.reviewCode,
     submitted_at: review.submittedAt,
-    comments_and_replies: fullContent,
-    review_link: reviewLink,
-    attachment: attachmentBase64,
-    attachment_pdf: attachmentPdfBase64
+    comments_and_replies: lines
   };
 
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
-    .then(function(){ console.log('Notification email sent'); })
-    .catch(function(err){ console.error('EmailJS error:', err); });
+  return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
 }
 
 // DOWNLOAD
