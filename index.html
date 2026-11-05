@@ -164,6 +164,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* COLORS */
 .COLORS{}
+
+/* QUESTION CARD MODE */
+.q-mode-row{margin-bottom:10px;}
+.q-mode-toggle{display:flex;gap:6px;}
+.q-mode-btn{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);font-family:inherit;transition:all 0.15s;}
+.q-mode-btn.active{background:var(--green);color:#fff;border-color:var(--green);}
+.q-builder{display:none;background:var(--gl);border:1.5px solid var(--gm);border-radius:10px;padding:12px;margin-bottom:12px;}
+.q-builder.show{display:block;}
+/* Question blocks — rendered inside doc-editor (setup) and client-doc (client view) */
+.q-block{border:2px solid var(--green);border-radius:10px;margin:14px 0;overflow:hidden;display:block;}
+.q-block-head{background:var(--green);color:#fff;padding:10px 14px;display:flex;align-items:flex-start;gap:10px;}
+.q-block-num{background:rgba(255,255,255,0.2);border-radius:50%;width:26px;height:26px;min-width:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.q-block-text{font-size:13px;font-weight:600;line-height:1.4;flex:1;}
+.q-block-body{padding:12px 14px;min-height:60px;background:#fff;color:var(--text);font-size:14px;line-height:1.7;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -228,8 +242,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="col-label">Review code (share this with your client)</div>
         <input class="field-input" id="review-code" placeholder="e.g. ORGANISATIONNAME-001" style="font-family:monospace;" autocapitalize="characters">
       </div>
+      <div class="q-mode-row">
+        <div class="col-label" style="margin-bottom:6px;">Document mode</div>
+        <div class="q-mode-toggle">
+          <button class="q-mode-btn active" id="mode-doc-btn">📄 Document</button>
+          <button class="q-mode-btn" id="mode-cards-btn">📋 Question cards</button>
+        </div>
+      </div>
+      <div class="q-builder" id="q-builder">
+        <div class="col-label" style="margin-bottom:6px;">Add a question card</div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
+          <textarea class="field-textarea" id="q-input" placeholder="e.g. Describe your experience delivering similar contracts in the last 3 years…" style="min-height:56px;flex:1;font-size:13px;"></textarea>
+          <button class="add-btn" id="q-add-btn" style="white-space:nowrap;flex-shrink:0;margin-bottom:0;">Add →</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);">Press Enter or click Add →. Each question becomes a card in the document. Add as many as you need, then add your comments as normal.</div>
+      </div>
       <div class="col-label" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Paste your draft document here</span>
+        <span id="doc-label-text">Paste your draft document here</span>
         <span id="selection-hint" style="display:none;font-size:11px;color:#3e554f;font-weight:600;">✓ Text selected — add your comment below</span>
       </div>
       <div class="fmt-toolbar" id="fmt-toolbar">
@@ -533,6 +562,71 @@ function updateToolbarState(){
 docEditor.addEventListener('mouseup', updateToolbarState);
 docEditor.addEventListener('keyup', updateToolbarState);
 
+// QUESTION CARD MODE
+var questionCount = 0;
+
+function setDocMode(mode){
+  var docBtn = document.getElementById('mode-doc-btn');
+  var cardsBtn = document.getElementById('mode-cards-btn');
+  var builder = document.getElementById('q-builder');
+  var docLabelText = document.getElementById('doc-label-text');
+  if(mode === 'cards'){
+    cardsBtn.classList.add('active');
+    docBtn.classList.remove('active');
+    builder.classList.add('show');
+    if(docLabelText) docLabelText.textContent = 'Document (question cards will appear here)';
+  } else {
+    docBtn.classList.add('active');
+    cardsBtn.classList.remove('active');
+    builder.classList.remove('show');
+    if(docLabelText) docLabelText.textContent = 'Paste your draft document here';
+  }
+}
+
+document.getElementById('mode-doc-btn').addEventListener('click', function(){ setDocMode('doc'); });
+document.getElementById('mode-cards-btn').addEventListener('click', function(){ setDocMode('cards'); });
+
+function escapeHtml(str){
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function insertQuestionCard(questionText){
+  if(!questionText.trim()) return;
+  questionCount++;
+  var cardHtml =
+    '<div class="q-block">' +
+      '<div class="q-block-head">' +
+        '<div class="q-block-num">' + questionCount + '</div>' +
+        '<div class="q-block-text">' + escapeHtml(questionText) + '</div>' +
+      '</div>' +
+      '<div class="q-block-body"><br></div>' +
+    '</div><p><br></p>';
+  docEditor.focus();
+  var sel = window.getSelection();
+  var r = document.createRange();
+  r.selectNodeContents(docEditor);
+  r.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(r);
+  document.execCommand('insertHTML', false, cardHtml);
+  document.getElementById('q-input').value = '';
+  document.getElementById('q-input').focus();
+  notif('Question ' + questionCount + ' added ✓');
+}
+
+document.getElementById('q-add-btn').addEventListener('click', function(){
+  var text = document.getElementById('q-input').value.trim();
+  if(!text){ notif('Please type a question first.'); return; }
+  insertQuestionCard(text);
+});
+
+document.getElementById('q-input').addEventListener('keydown', function(e){
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    document.getElementById('q-add-btn').click();
+  }
+});
+
 // LOGIN
 document.getElementById('show-jade-btn').onclick=function(){
   document.getElementById('client-panel').style.display='none';
@@ -782,6 +876,8 @@ document.getElementById('new-review-btn').onclick=function(){
   document.getElementById('review-code').value='';
   document.getElementById('doc-editor').innerHTML='';
   comments=[];
+  questionCount=0;
+  setDocMode('doc');
   renderComments();
   document.getElementById('gen-btn').textContent='Generate client link →';
   document.getElementById('gen-section').style.display='block';
@@ -809,6 +905,9 @@ document.getElementById('load-edit-btn').onclick=async function(){
     document.getElementById('tender-ref').value=review.tenderRef||'';
     document.getElementById('review-code').value=review.reviewCode||code;
     document.getElementById('doc-editor').innerHTML=review.docHTML||review.docText||'';
+    // Sync question card counter with any cards already in the loaded document
+    questionCount = docEditor.querySelectorAll('.q-block').length;
+    if(questionCount > 0) setDocMode('cards');
     // Rebuild comments in memory and sidebar
     comments=JSON.parse(JSON.stringify(review.comments||[]));
     renderComments();
