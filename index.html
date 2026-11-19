@@ -266,11 +266,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
       <div class="q-builder" id="q-builder">
-        <div class="col-label" style="margin-bottom:6px;">Add a question card</div>
-        <textarea class="field-textarea" id="q-input" placeholder="e.g. Describe your experience delivering similar contracts in the last 3 years…" style="min-height:70px;width:100%;font-size:13px;margin-bottom:8px;box-sizing:border-box;"></textarea>
+        <div class="col-label" style="margin-bottom:4px;">Question</div>
+        <textarea class="field-textarea" id="q-input" placeholder="e.g. Describe your experience delivering similar contracts in the last 3 years…" style="min-height:60px;width:100%;font-size:13px;margin-bottom:8px;box-sizing:border-box;"></textarea>
+        <div class="col-label" style="margin-bottom:4px;">Response</div>
+        <textarea class="field-textarea" id="q-response" placeholder="Paste the client's draft response here…" style="min-height:100px;width:100%;font-size:13px;margin-bottom:8px;box-sizing:border-box;"></textarea>
         <input class="field-input" id="q-weight" placeholder="Word weighting, e.g. 20% (optional)" style="font-size:13px;margin-bottom:8px;width:100%;box-sizing:border-box;">
-        <button class="add-btn" id="q-add-btn" style="width:100%;">Add question card →</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;">Press Enter or click Add →. Each question becomes a stacked card. Add as many as you need, then add comments as normal.</div>
+        <button class="add-btn" id="q-add-btn" style="width:100%;">Add card →</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">Fill in the question and response, then click Add card →. Each card stacks below — add as many as you need.</div>
       </div>
       <div class="col-label" style="display:flex;align-items:center;justify-content:space-between;">
         <span id="doc-label-text">Paste your draft document here</span>
@@ -626,11 +628,14 @@ function escapeHtml(str){
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function insertQuestionCard(questionText, weightText){
+function insertQuestionCard(questionText, responseText, weightText){
   if(!questionText.trim()) return;
   questionCount++;
   var wt = weightText && weightText.trim();
   var weightHtml = wt ? '<div class="q-block-weight">' + escapeHtml(wt) + '</div>' : '';
+  var responseHtml = responseText && responseText.trim()
+    ? escapeHtml(responseText.trim()).replace(/\n/g, '<br>')
+    : '<br>';
   var cardHtml =
     '<div class="q-block">' +
       '<div class="q-block-head">' +
@@ -652,7 +657,7 @@ function insertQuestionCard(questionText, weightText){
         '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="insertTableAtCursor()" title="Insert table">Tbl</button>' +
         '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="insertTextBox()" title="Insert text box">Box</button>' +
       '</div>' +
-      '<div class="q-block-body"><br></div>' +
+      '<div class="q-block-body">' + responseHtml + '</div>' +
     '</div><p><br></p>';
   docEditor.focus();
   var sel = window.getSelection();
@@ -662,7 +667,9 @@ function insertQuestionCard(questionText, weightText){
   sel.removeAllRanges();
   sel.addRange(r);
   document.execCommand('insertHTML', false, cardHtml);
+  // Clear all builder fields and return focus to the question textarea
   document.getElementById('q-input').value = '';
+  document.getElementById('q-response').value = '';
   document.getElementById('q-weight').value = '';
   document.getElementById('q-input').focus();
   notif('Question ' + questionCount + ' added ✓');
@@ -670,16 +677,10 @@ function insertQuestionCard(questionText, weightText){
 
 document.getElementById('q-add-btn').addEventListener('click', function(){
   var text = document.getElementById('q-input').value.trim();
+  var response = document.getElementById('q-response').value;
   var weight = document.getElementById('q-weight').value.trim();
   if(!text){ notif('Please type a question first.'); return; }
-  insertQuestionCard(text, weight);
-});
-
-document.getElementById('q-input').addEventListener('keydown', function(e){
-  if(e.key === 'Enter' && !e.shiftKey){
-    e.preventDefault();
-    document.getElementById('q-add-btn').click();
-  }
+  insertQuestionCard(text, response, weight);
 });
 
 // LOGIN
@@ -933,6 +934,7 @@ document.getElementById('new-review-btn').onclick=function(){
   comments=[];
   questionCount=0;
   document.getElementById('q-input').value='';
+  document.getElementById('q-response').value='';
   document.getElementById('q-weight').value='';
   setDocMode('doc');
   renderComments();
