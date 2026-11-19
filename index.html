@@ -185,6 +185,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .q-block-fmt-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px;margin-right:4px;}
 .q-block-fmt-btn{min-width:28px;height:26px;padding:0 6px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;}
 .q-block-fmt-btn:hover{background:#fff;border-color:var(--border);}
+.q-block-wc{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;margin-left:auto;padding-left:6px;}
+.q-block-del{background:none;border:none;color:rgba(255,255,255,0.45);font-size:15px;cursor:pointer;padding:2px 5px;line-height:1;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:1px;font-family:inherit;}
+.q-block-del:hover{color:#fff;background:rgba(255,255,255,0.18);}
+#client-doc .q-block-del{display:none;}
+#total-wc{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;margin-left:auto;}
 .q-block-body{padding:14px 16px;min-height:80px;background:#fff;color:var(--text);font-size:14px;line-height:1.8;white-space:normal;outline:none;}
 /* Override the doc-editable div:not(table) white-space rule for card elements */
 .doc-editable .q-block,.doc-editable .q-block-head,.doc-editable .q-block-head-inner,.doc-editable .q-block-body,.doc-editable .q-block-fmt{white-space:normal;}
@@ -269,7 +274,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="col-label" style="margin-bottom:4px;">Question</div>
         <textarea class="field-textarea" id="q-input" placeholder="e.g. Describe your experience delivering similar contracts in the last 3 years…" style="min-height:60px;width:100%;font-size:13px;margin-bottom:8px;box-sizing:border-box;"></textarea>
         <div class="col-label" style="margin-bottom:4px;">Response</div>
-        <textarea class="field-textarea" id="q-response" placeholder="Paste the client's draft response here…" style="min-height:100px;width:100%;font-size:13px;margin-bottom:8px;box-sizing:border-box;"></textarea>
+        <textarea class="field-textarea" id="q-response" placeholder="Paste the client's draft response here…" style="min-height:100px;width:100%;font-size:13px;margin-bottom:4px;box-sizing:border-box;"></textarea>
+        <div id="q-response-wc" style="font-size:11px;font-weight:600;color:var(--muted);text-align:right;margin-bottom:8px;">0 words</div>
         <input class="field-input" id="q-weight" placeholder="Word weighting, e.g. 20% (optional)" style="font-size:13px;margin-bottom:8px;width:100%;box-sizing:border-box;">
         <button class="add-btn" id="q-add-btn" style="width:100%;">Add card →</button>
         <div style="font-size:11px;color:var(--muted);margin-top:8px;">Fill in the question and response, then click Add card →. Each card stacks below — add as many as you need.</div>
@@ -295,6 +301,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button type="button" class="fmt-color-dot" data-color="#1a1a1a" title="Black" style="background:#1a1a1a;"></button>
         <button type="button" class="fmt-color-dot" data-color="#ef4444" title="Red" style="background:#ef4444;"></button>
         <button type="button" class="fmt-color-dot" data-color="#1d4ed8" title="Corporate blue" style="background:#1d4ed8;"></button>
+        <span id="total-wc">0 words</span>
       </div>
       <div class="field-textarea doc-editable" id="doc-editor" contenteditable="true" data-placeholder="Paste the full draft text here…" style="border-radius:0 0 8px 8px;"></div>
     </div>
@@ -583,6 +590,42 @@ function updateToolbarState(){
 docEditor.addEventListener('mouseup', updateToolbarState);
 docEditor.addEventListener('keyup', updateToolbarState);
 
+// WORD COUNT
+function countWords(el){
+  var text = (el.innerText || el.textContent || '').trim();
+  if(!text) return 0;
+  return text.split(/\s+/).filter(function(w){ return w.length > 0; }).length;
+}
+function updateTotalWordCount(){
+  var n = countWords(docEditor);
+  var el = document.getElementById('total-wc');
+  if(el) el.textContent = n.toLocaleString() + (n === 1 ? ' word' : ' words');
+}
+function updateCardWordCount(body){
+  var card = body;
+  while(card && (!card.classList || !card.classList.contains('q-block'))) card = card.parentNode;
+  if(!card) return;
+  var wc = card.querySelector('.q-block-wc');
+  if(!wc) return;
+  var n = countWords(body);
+  wc.textContent = n.toLocaleString() + (n === 1 ? ' word' : ' words');
+}
+function initAllWordCounts(){
+  docEditor.querySelectorAll('.q-block-body').forEach(function(body){ updateCardWordCount(body); });
+  updateTotalWordCount();
+}
+docEditor.addEventListener('input', function(e){
+  var body = e.target && e.target.closest ? e.target.closest('.q-block-body') : null;
+  if(body) updateCardWordCount(body);
+  updateTotalWordCount();
+});
+// Live counter on the builder response textarea
+document.getElementById('q-response').addEventListener('input', function(){
+  var text = this.value.trim();
+  var n = text ? text.split(/\s+/).filter(function(w){ return w.length > 0; }).length : 0;
+  document.getElementById('q-response-wc').textContent = n.toLocaleString() + (n === 1 ? ' word' : ' words');
+});
+
 // TEXT BOX INSERTION
 function insertTextBox(){
   var boxHtml = '<div class="txt-box"><br></div><p><br></p>';
@@ -645,6 +688,7 @@ function insertQuestionCard(questionText, responseText, weightText){
           '<div class="q-block-text">' + escapeHtml(questionText) + '</div>' +
         '</div>' +
         weightHtml +
+        '<button type="button" class="q-block-del" onmousedown="event.preventDefault()" onclick="deleteQuestionCard(this)" title="Remove card">✕</button>' +
       '</div>' +
       '<div class="q-block-fmt">' +
         '<span class="q-block-fmt-label">FORMAT</span>' +
@@ -656,6 +700,7 @@ function insertQuestionCard(questionText, responseText, weightText){
         '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'insertOrderedList\')" title="Numbered list">1.</button>' +
         '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="insertTableAtCursor()" title="Insert table">Tbl</button>' +
         '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="insertTextBox()" title="Insert text box">Box</button>' +
+        '<span class="q-block-wc">0 words</span>' +
       '</div>' +
       '<div class="q-block-body">' + responseHtml + '</div>' +
     '</div><p><br></p>';
@@ -670,9 +715,38 @@ function insertQuestionCard(questionText, responseText, weightText){
   // Clear all builder fields and return focus to the question textarea
   document.getElementById('q-input').value = '';
   document.getElementById('q-response').value = '';
+  document.getElementById('q-response-wc').textContent = '0 words';
   document.getElementById('q-weight').value = '';
   document.getElementById('q-input').focus();
+  // Initialize word count on the new card (body is pre-filled)
+  setTimeout(function(){
+    var bodies = docEditor.querySelectorAll('.q-block-body');
+    var lastBody = bodies[bodies.length - 1];
+    if(lastBody) updateCardWordCount(lastBody);
+    updateTotalWordCount();
+  }, 50);
   notif('Question ' + questionCount + ' added ✓');
+}
+
+function deleteQuestionCard(btn){
+  var card = btn;
+  while(card && (!card.classList || !card.classList.contains('q-block'))) card = card.parentNode;
+  if(!card) return;
+  // Also remove the trailing <p><br></p> spacer that was inserted after the card
+  var next = card.nextSibling;
+  if(next && next.nodeName === 'P' && (next.innerHTML === '<br>' || next.innerHTML === '')) next.remove();
+  card.remove();
+  // Re-number remaining cards
+  questionCount = 0;
+  docEditor.querySelectorAll('.q-block').forEach(function(c){
+    questionCount++;
+    var num = c.querySelector('.q-block-num');
+    var lbl = c.querySelector('.q-block-label');
+    if(num) num.textContent = questionCount;
+    if(lbl) lbl.textContent = 'QUESTION ' + questionCount;
+  });
+  updateTotalWordCount();
+  notif('Card removed');
 }
 
 document.getElementById('q-add-btn').addEventListener('click', function(){
@@ -935,7 +1009,9 @@ document.getElementById('new-review-btn').onclick=function(){
   questionCount=0;
   document.getElementById('q-input').value='';
   document.getElementById('q-response').value='';
+  document.getElementById('q-response-wc').textContent='0 words';
   document.getElementById('q-weight').value='';
+  updateTotalWordCount();
   setDocMode('doc');
   renderComments();
   document.getElementById('gen-btn').textContent='Generate client link →';
@@ -967,6 +1043,8 @@ document.getElementById('load-edit-btn').onclick=async function(){
     // Sync question card counter with any cards already in the loaded document
     questionCount = docEditor.querySelectorAll('.q-block').length;
     if(questionCount > 0) setDocMode('cards');
+    // Initialise word counts for loaded content
+    setTimeout(initAllWordCounts, 50);
     // Rebuild comments in memory and sidebar
     comments=JSON.parse(JSON.stringify(review.comments||[]));
     renderComments();
