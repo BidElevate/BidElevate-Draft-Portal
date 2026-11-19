@@ -74,6 +74,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .doc-editable table,.client-doc-text table{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;margin:10px 0;white-space:normal;}
 .doc-editable td,.doc-editable th,.client-doc-text td,.client-doc-text th{border:1px solid #d1d5db!important;padding:8px 10px!important;vertical-align:top!important;word-break:break-word;white-space:normal;width:auto!important;min-width:0!important;}
 .doc-editable colgroup,.doc-editable col,.client-doc-text colgroup,.client-doc-text col{width:auto!important;}
+.doc-editable th,.client-doc-text th{background:#f3f4f6!important;font-weight:700!important;}
 .doc-editable p,.doc-editable div:not(table){white-space:pre-wrap;}
 .hl-mark{border-radius:3px;padding:1px 2px;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,0.04);}
 .hl-mark:hover{filter:brightness(0.95);}
@@ -173,11 +174,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .q-builder{display:none;background:var(--gl);border:1.5px solid var(--gm);border-radius:10px;padding:12px;margin-bottom:12px;}
 .q-builder.show{display:block;}
 /* Question blocks — rendered inside doc-editor (setup) and client-doc (client view) */
-.q-block{border:2px solid var(--green);border-radius:10px;margin:14px 0;overflow:hidden;display:block;}
-.q-block-head{background:var(--green);color:#fff;padding:10px 14px;display:flex;align-items:flex-start;gap:10px;}
-.q-block-num{background:rgba(255,255,255,0.2);border-radius:50%;width:26px;height:26px;min-width:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
-.q-block-text{font-size:13px;font-weight:600;line-height:1.4;flex:1;}
-.q-block-body{padding:12px 14px;min-height:60px;background:#fff;color:var(--text);font-size:14px;line-height:1.7;}
+.q-block{border:2px solid #243b35;border-radius:10px;margin:16px 0;overflow:hidden;display:block;white-space:normal;}
+.q-block-head{background:#243b35;color:#fff;padding:12px 16px;display:flex;align-items:flex-start;gap:12px;white-space:normal;}
+.q-block-num{background:rgba(255,255,255,0.15);border-radius:50%;width:30px;height:30px;min-width:30px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:2px;}
+.q-block-head-inner{flex:1;}
+.q-block-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.6);margin-bottom:4px;}
+.q-block-text{font-size:14px;font-weight:600;line-height:1.5;flex:1;}
+.q-block-weight{font-size:12px;font-weight:700;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;align-self:flex-start;margin-top:2px;}
+.q-block-fmt{padding:6px 10px;background:#f3f4f6;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.q-block-fmt-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.5px;margin-right:4px;}
+.q-block-fmt-btn{min-width:28px;height:26px;padding:0 6px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;}
+.q-block-fmt-btn:hover{background:#fff;border-color:var(--border);}
+.q-block-body{padding:14px 16px;min-height:80px;background:#fff;color:var(--text);font-size:14px;line-height:1.8;white-space:normal;outline:none;}
+/* Override the doc-editable div:not(table) white-space rule for card elements */
+.doc-editable .q-block,.doc-editable .q-block-head,.doc-editable .q-block-head-inner,.doc-editable .q-block-body,.doc-editable .q-block-fmt{white-space:normal;}
+.client-doc-text .q-block,.client-doc-text .q-block-head,.client-doc-text .q-block-head-inner,.client-doc-text .q-block-body{white-space:normal;}
+/* Hide format toolbar in client view — buttons are non-functional there */
+#client-doc .q-block-fmt{display:none;}
+/* Text box */
+.txt-box{border:1.5px solid var(--border);border-left:4px solid var(--green);border-radius:6px;padding:12px 16px;margin:12px 0;background:#fafffe;min-height:40px;white-space:normal;display:block;}
+.doc-editable .txt-box,.client-doc-text .txt-box{white-space:normal;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -252,8 +268,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="q-builder" id="q-builder">
         <div class="col-label" style="margin-bottom:6px;">Add a question card</div>
         <textarea class="field-textarea" id="q-input" placeholder="e.g. Describe your experience delivering similar contracts in the last 3 years…" style="min-height:70px;width:100%;font-size:13px;margin-bottom:8px;box-sizing:border-box;"></textarea>
+        <input class="field-input" id="q-weight" placeholder="Word weighting, e.g. 20% (optional)" style="font-size:13px;margin-bottom:8px;width:100%;box-sizing:border-box;">
         <button class="add-btn" id="q-add-btn" style="width:100%;">Add question card →</button>
-        <div style="font-size:11px;color:var(--muted);">Press Enter or click Add →. Each question becomes a card in the document. Add as many as you need, then add your comments as normal.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">Press Enter or click Add →. Each question becomes a stacked card. Add as many as you need, then add comments as normal.</div>
       </div>
       <div class="col-label" style="display:flex;align-items:center;justify-content:space-between;">
         <span id="doc-label-text">Paste your draft document here</span>
@@ -270,6 +287,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span class="fmt-divider"></span>
         <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="heading" title="Heading">Heading</button>
         <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="paragraph" title="Normal text">Normal</button>
+        <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="table" title="Insert table">Table</button>
+        <button type="button" class="fmt-btn fmt-btn-wide" data-cmd="textbox" title="Insert text box">Text box</button>
         <span class="fmt-divider"></span>
         <button type="button" class="fmt-color-dot" data-color="#1a1a1a" title="Black" style="background:#1a1a1a;"></button>
         <button type="button" class="fmt-color-dot" data-color="#ef4444" title="Red" style="background:#ef4444;"></button>
@@ -531,6 +550,8 @@ document.querySelectorAll('.fmt-btn').forEach(function(btn){
     else if(cmd === 'bullet'){ document.execCommand('insertUnorderedList'); }
     else if(cmd === 'heading'){ document.execCommand('formatBlock', false, 'H2'); }
     else if(cmd === 'paragraph'){ document.execCommand('formatBlock', false, 'P'); }
+    else if(cmd === 'table'){ insertTableAtCursor(); }
+    else if(cmd === 'textbox'){ insertTextBox(); }
     updateToolbarState();
   });
 });
@@ -560,6 +581,23 @@ function updateToolbarState(){
 docEditor.addEventListener('mouseup', updateToolbarState);
 docEditor.addEventListener('keyup', updateToolbarState);
 
+// TEXT BOX INSERTION
+function insertTextBox(){
+  var boxHtml = '<div class="txt-box"><br></div><p><br></p>';
+  document.execCommand('insertHTML', false, boxHtml);
+}
+
+// TABLE INSERTION
+function insertTableAtCursor(){
+  var tableHtml =
+    '<table><tbody>' +
+      '<tr><th><br></th><th><br></th><th><br></th></tr>' +
+      '<tr><td><br></td><td><br></td><td><br></td></tr>' +
+      '<tr><td><br></td><td><br></td><td><br></td></tr>' +
+    '</tbody></table><p><br></p>';
+  document.execCommand('insertHTML', false, tableHtml);
+}
+
 // QUESTION CARD MODE
 var questionCount = 0;
 
@@ -588,14 +626,31 @@ function escapeHtml(str){
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function insertQuestionCard(questionText){
+function insertQuestionCard(questionText, weightText){
   if(!questionText.trim()) return;
   questionCount++;
+  var wt = weightText && weightText.trim();
+  var weightHtml = wt ? '<div class="q-block-weight">' + escapeHtml(wt) + '</div>' : '';
   var cardHtml =
     '<div class="q-block">' +
       '<div class="q-block-head">' +
         '<div class="q-block-num">' + questionCount + '</div>' +
-        '<div class="q-block-text">' + escapeHtml(questionText) + '</div>' +
+        '<div class="q-block-head-inner">' +
+          '<div class="q-block-label">QUESTION ' + questionCount + '</div>' +
+          '<div class="q-block-text">' + escapeHtml(questionText) + '</div>' +
+        '</div>' +
+        weightHtml +
+      '</div>' +
+      '<div class="q-block-fmt">' +
+        '<span class="q-block-fmt-label">FORMAT</span>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'bold\')" title="Bold"><b>B</b></button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'italic\')" title="Italic"><i>I</i></button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'underline\')" title="Underline"><u>U</u></button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'formatBlock\',false,\'h2\')" title="Heading">H2</button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'insertUnorderedList\')" title="Bullet list">&#8226;</button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="document.execCommand(\'insertOrderedList\')" title="Numbered list">1.</button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="insertTableAtCursor()" title="Insert table">Tbl</button>' +
+        '<button type="button" class="q-block-fmt-btn" onmousedown="event.preventDefault()" onclick="insertTextBox()" title="Insert text box">Box</button>' +
       '</div>' +
       '<div class="q-block-body"><br></div>' +
     '</div><p><br></p>';
@@ -608,14 +663,16 @@ function insertQuestionCard(questionText){
   sel.addRange(r);
   document.execCommand('insertHTML', false, cardHtml);
   document.getElementById('q-input').value = '';
+  document.getElementById('q-weight').value = '';
   document.getElementById('q-input').focus();
   notif('Question ' + questionCount + ' added ✓');
 }
 
 document.getElementById('q-add-btn').addEventListener('click', function(){
   var text = document.getElementById('q-input').value.trim();
+  var weight = document.getElementById('q-weight').value.trim();
   if(!text){ notif('Please type a question first.'); return; }
-  insertQuestionCard(text);
+  insertQuestionCard(text, weight);
 });
 
 document.getElementById('q-input').addEventListener('keydown', function(e){
@@ -875,6 +932,8 @@ document.getElementById('new-review-btn').onclick=function(){
   document.getElementById('doc-editor').innerHTML='';
   comments=[];
   questionCount=0;
+  document.getElementById('q-input').value='';
+  document.getElementById('q-weight').value='';
   setDocMode('doc');
   renderComments();
   document.getElementById('gen-btn').textContent='Generate client link →';
